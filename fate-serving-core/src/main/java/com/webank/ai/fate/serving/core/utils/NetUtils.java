@@ -40,6 +40,7 @@ public class NetUtils {
     // valid port range is (0, 65535]
     private static final int MIN_PORT = 0;
     private static final int MAX_PORT = 65535;
+    // 把正则表达式编译成模式对象
     private static final Pattern ADDRESS_PATTERN = Pattern.compile("^\\d{1,3}(\\.\\d{1,3}){3}\\:\\d{1,5}$");
     private static final Pattern LOCALHOST_PATTERN = Pattern.compile("localhost\\:\\d{1,5}$");
     private static final Pattern LOCAL_IP_PATTERN = Pattern.compile("127(\\.\\d{1,3}){3}$");
@@ -60,14 +61,31 @@ public class NetUtils {
 //        System.out.println(NetUtils.getLocalAddress0(""));
     }
 
+    // Random的缺点在于多个线程会使用同一个原子性变量，从而导致对原子变量的竞争；
+    // 而ThreadLocalRandom保证每个线程都维护一个种子变量，每个线程根据自己老的种子(每个线程不同)生成新的种子，避免了竞争问题，大大提高了并发性能。
+    // 空间换时间
     public static int getRandomPort() {
         return RND_PORT_START + ThreadLocalRandom.current().nextInt(RND_PORT_RANGE);
     }
 
-
+    /**
+     * 判断是否LocalhostAddress，如：localhost:8081
+     * @param address 地址
+     * @return boolean
+     */
     public static boolean isLocalhostAddress(String address){
+       // 通过模式对象得到匹配器对象，这个时候需要的是被匹配的字符串
+       // .maches() 调用匹配器对象的功能，返回boolean类型
+       // 需要使用获取功能（查找）的时候使用Pattern 判断、分割、替换功能不使用
+       // .find()查找 .group()方法返回找到的子字符串
+       // 这里没有使用获取功能，可以不适用Pattern
        return LOCALHOST_PATTERN.matcher(address).matches();
     }
+
+    /**
+     * 获取端口
+     * @return
+     */
     public static int getAvailablePort() {
         try (ServerSocket ss = new ServerSocket()) {
             ss.bind(null);
@@ -91,10 +109,20 @@ public class NetUtils {
         return port;
     }
 
+    /**
+     * 判断端口号是否有效
+     * @param port
+     * @return
+     */
     public static boolean isInvalidPort(int port) {
         return port <= MIN_PORT || port > MAX_PORT;
     }
 
+    /**
+     * 判断地址是否有效，地址格式如：192.168.1.1:8080
+     * @param address
+     * @return
+     */
     public static boolean isValidAddress(String address) {
         return ADDRESS_PATTERN.matcher(address).matches();
     }
