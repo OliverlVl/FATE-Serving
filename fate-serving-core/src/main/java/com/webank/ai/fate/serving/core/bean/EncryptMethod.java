@@ -18,11 +18,11 @@ package com.webank.ai.fate.serving.core.bean;
 
 public enum EncryptMethod {
     /**
-     * type MD5
+     * type MD5  hash算法
      */
     MD5,
     /**
-     * type SHA256
+     * type SHA256 比MD5更安全
      */
     SHA256,
 }

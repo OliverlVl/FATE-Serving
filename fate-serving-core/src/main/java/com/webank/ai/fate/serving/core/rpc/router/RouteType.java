@@ -22,11 +22,11 @@ package com.webank.ai.fate.serving.core.rpc.router;
  **/
 public enum RouteType {
     /**
-     * RANDOM_ROUTE
+     * RANDOM_ROUTE  随机路由
      */
     RANDOM_ROUTE,
     /**
-     * CONSISTENT_HASH_ROUTE
+     * CONSISTENT_HASH_ROUTE  负载均衡 一致性hash路由
      */
     CONSISTENT_HASH_ROUTE
 }

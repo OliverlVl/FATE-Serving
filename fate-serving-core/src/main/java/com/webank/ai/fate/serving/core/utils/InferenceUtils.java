@@ -23,8 +23,12 @@ import java.util.UUID;
 
 public class InferenceUtils {
 
+    // 创建日志实例
     private static final Logger logger = LoggerFactory.getLogger(InferenceUtils.class);
 
+    // UUID(Universally Unique Identifier)全局唯一标识符,,是指在一台机器上生成的数字，它保证对在同一时空中的所有机器都是唯一的，是由一个十六位的数字组成,表现出来的形式。
+    // UUID.randomUUID().toString() 可以用来生成数据库的主键id
+    // UUID是由一个十六位的数字组成,表现出来的形式例如:550E8400-E29B-11D4-A716-446655440000
     public static String generateCaseid() {
         return UUID.randomUUID().toString().replace("-", "");
     }
@@ -32,7 +36,6 @@ public class InferenceUtils {
     public static String generateSeqno() {
         return UUID.randomUUID().toString().replace("-", "");
     }
-
 
     public static Object getClassByName(String classPath) {
         try {
