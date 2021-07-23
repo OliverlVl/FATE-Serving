@@ -34,15 +34,16 @@ public class FeatureSelection extends BaseComponent {
     private LeftCols finalLeftCols;
     private boolean needRun;
 
+    //将模型的参数和结果，也就是Meta和param文件，反序列化为对象从而对Serving模型初始化
     @Override
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init Feature Selection class");
         this.needRun = false;
         try {
             this.featureSelectionMeta = this.parseModel(FeatureSelectionMeta.parser(), protoMeta);
-            this.needRun = this.featureSelectionMeta.getNeedRun();
+            this.needRun = this.featureSelectionMeta.getNeedRun();  //是否需要执行，如果为否，这个组件在后续预测时将被跳过
             this.featureSelectionParam = this.parseModel(FeatureSelectionParam.parser(), protoParam);
-            this.finalLeftCols = featureSelectionParam.getFinalLeftCols();
+            this.finalLeftCols = featureSelectionParam.getFinalLeftCols();  //经过特征选择后，需要保留的列名
         } catch (Exception ex) {
             ex.printStackTrace();
             return ILLEGALDATA;
@@ -58,6 +59,7 @@ public class FeatureSelection extends BaseComponent {
         if (!this.needRun) {
             return firstData;
         }
+        //进行转化功能，将输入数据中，属于最终需要保留的变量留下，其余变量被过滤掉
         for (String key : firstData.keySet()) {
             if (this.finalLeftCols.getLeftCols().containsKey(key)) {
                 Boolean isLeft = this.finalLeftCols.getLeftCols().get(key);

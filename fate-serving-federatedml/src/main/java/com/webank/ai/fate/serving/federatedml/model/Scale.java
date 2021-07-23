@@ -32,6 +32,7 @@ public class Scale extends BaseComponent {
     private ScaleParam scaleParam;
     private boolean needRun;
 
+    //将模型的参数和结果，也就是Meta和param文件，反序列化为对象从而对Serving模型初始化
     @Override
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init Scale class");
@@ -51,6 +52,7 @@ public class Scale extends BaseComponent {
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputDatas) {
         Map<String, Object> outputData = inputDatas.get(0);
         if (this.needRun) {
+            //利用离线训练产生的数据，对在线数据做同样处理。根据归一化方法的不同，处理方法分别对应min-max-scale和standard-scale
             String scaleMethod = this.scaleMeta.getMethod();
             if (scaleMethod.toLowerCase().equals(Dict.MIN_MAX_SCALE)) {
                 MinMaxScale minMaxScale = new MinMaxScale();

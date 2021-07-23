@@ -35,15 +35,17 @@ public class OneHotEncoder extends BaseComponent implements LocalInferenceAware 
     private List<String> cols;
     private Map<String, ColsMap> colsMapMap;
     private boolean needRun;
+
+    //将模型的参数和结果，也就是Meta和param文件，反序列化为对象从而对Serving模型初始化
     @Override
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init OneHot Encoder class");
         try {
             OneHotMeta oneHotMeta = this.parseModel(OneHotMeta.parser(), protoMeta);
             OneHotParam oneHotParam = this.parseModel(OneHotParam.parser(), protoParam);
-            this.needRun = oneHotMeta.getNeedRun();
-            this.cols = oneHotMeta.getTransformColNamesList();
-            this.colsMapMap = oneHotParam.getColMapMap();
+            this.needRun = oneHotMeta.getNeedRun(); //是否需要执行，如果为否，这个组件在后续预测时将被跳过
+            this.cols = oneHotMeta.getTransformColNamesList();  //需要做转化的列名
+            this.colsMapMap = oneHotParam.getColMapMap();   //每个需要转化的列，各种可能的值对应的新列名
         } catch (Exception ex) {
             logger.error("OneHotEncoder initModel error", ex);
             return ILLEGALDATA;
@@ -87,6 +89,8 @@ public class OneHotEncoder extends BaseComponent implements LocalInferenceAware 
                 } catch (Throwable e) {
                     logger.error("Onehot component accept number input value only");
                 }
+                //进行转化功能，对每个需要转化的输入数据，和colsMapMap中的key做对比，
+                //当相等时，将对应的新列名的值设定为1，其余值均设定为0，如果其中没有值与输入数据相等，则所有新列名对应的值均为0
                 for (int i = 0; i < values.size(); i++) {
                     Integer possibleValue = Integer.parseInt(values.get(i));
                     String newColName = encodedVariables.get(i);

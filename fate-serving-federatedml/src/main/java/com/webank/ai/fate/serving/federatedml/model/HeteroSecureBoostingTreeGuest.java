@@ -129,6 +129,7 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
         return ret;
     }
 
+    //Guest首先执行本地推导
     @Override
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputData) {
         Map<String, Object> result = Maps.newHashMap();
@@ -146,11 +147,13 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
         logger.info("feature hit rate : {}", 1.0 * featureHit / this.featureNameFidMapping.size());
         double[] weights = new double[this.treeNum];
         int communicationRound = 0;
+        //对于所有的树进行遍历
         for (int i = 0; i < this.treeNum; ++i) {
             if (this.isLocateInLeaf(i, treeNodeIds[i])) {
                 continue;
             }
             treeNodeIds[i] = this.traverseTree(i, treeNodeIds[i], fidValueMapping);
+            //如果某棵树遇到host节点，则将host节点记录
             if (!this.isLocateInLeaf(i, treeNodeIds[i])) {
                 treeLocation.put(String.valueOf(i), treeNodeIds[i]);
             }
@@ -160,6 +163,7 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
         return result;
     }
 
+    //执行合并远端返回数据的逻辑
     @Override
     public Map<String, Object> mergeRemoteInference(Context context, List<Map<String, Object>> localDataList, Map<String, Object> remoteData) {
         Map<String, Object> result = this.handleRemoteReturnData(remoteData);
@@ -190,12 +194,14 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
             if (remoteComopnentData == null) {
                 remoteComopnentData = onePartyData;
             }
+            //由于已经获得Host方发送的路由表，则在后续的推理过程中，遇到任何的Host的节点，都可以知道遍历方向。 Guest从记录的host节点继续往下推导，直至到达叶子节点
             for (String treeIdx : treeLocation.keySet()) {
                 int idx = Integer.valueOf(treeIdx);
                 int curNodeId = (Integer) treeLocation.get(treeIdx);
                 int final_node_id = this.fastTraverseTree(idx, curNodeId, fidValueMapping, remoteComopnentData);
                 treeNodeIds[idx] = final_node_id;
             }
+            //Guest得到每个树的节点编号，利用节点编号索引出叶子权重，经过处理后得到预测结果，并将结果输出，推理流程完成
             for (int i = 0; i < this.treeNum; ++i) {
                 weights[i] = getTreeLeafWeight(i, treeNodeIds[i]);
             }

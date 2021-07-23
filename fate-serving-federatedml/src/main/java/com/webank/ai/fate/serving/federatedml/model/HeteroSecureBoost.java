@@ -42,19 +42,21 @@ public abstract class HeteroSecureBoost extends BaseComponent {
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init HeteroLR class");
         try {
+            //对输入的Meta和Param两个序列化的模型文件进行反序列化
             BoostingTreeModelParam param = this.parseModel(BoostingTreeModelParam.parser(), protoParam);
             BoostingTreeModelMeta meta = this.parseModel(BoostingTreeModelMeta.parser(), protoMeta);
             Map<Integer, String> featureNameMapping = param.getFeatureNameFidMapping();
             featureNameMapping.forEach((k, v) -> {
                 featureNameFidMapping.put(v, k);
             });
+            //初始化
             this.treeNum = param.getTreeNum();
-            this.initScore = param.getInitScoreList();
-            this.trees = param.getTreesList();
-            this.numClasses = param.getNumClasses();
-            this.classes = param.getClassesList();
-            this.treeDim = param.getTreeDim();
-            this.learningRate = meta.getLearningRate();
+            this.initScore = param.getInitScoreList();  //boost的初始化得分，具体可参考FATE离线建模文档
+            this.trees = param.getTreesList();  //具体的树信息列表，可参考对应的DecisionTreeModelParam
+            this.numClasses = param.getNumClasses();    //多少类，二分类问题为2，多分类问题则为具体分类数，回归问题为0，通过该字段可以判断具体建模任务类型
+            this.classes = param.getClassesList();  //类别标签
+            this.treeDim = param.getTreeDim();  //boost的每轮树的数量，对于回归和二分类等于1，对于多分类，是类别数量，每轮每个分类都有一个对应的树
+            this.learningRate = meta.getLearningRate(); //学习率和权重放缩因子，推理时每个树得到的权重都会乘以learning_rate
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -64,10 +66,12 @@ public abstract class HeteroSecureBoost extends BaseComponent {
         return OK;
     }
 
+    //离线的时候，每个树节点的域信息是partyid，如host:10000，通过该函数获取$role
     protected String getSite(int treeId, int treeNodeId) {
         return this.trees.get(treeId).getTree(treeNodeId).getSitename().split(":", -1)[0];
     }
 
+    //用来存储和读取每轮使用的数据
     protected String generateTag(String caseId, String modelId, int communicationRound) {
         return caseId + "_" + modelId + "_" + String.valueOf(communicationRound);
     }
@@ -76,6 +80,7 @@ public abstract class HeteroSecureBoost extends BaseComponent {
         return tag.split("_");
     }
 
+    //输入当前的树、节点编号，特征值，输出树的下一层节点编号
     protected int gotoNextLevel(int treeId, int treeNodeId, Map<String, Object> input) {
         int nextTreeNodeId;
         int fid = this.trees.get(treeId).getTree(treeNodeId).getFid();
