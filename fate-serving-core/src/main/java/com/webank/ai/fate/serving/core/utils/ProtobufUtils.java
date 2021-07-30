@@ -20,8 +20,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProtobufUtils {
+    // 创建日志实例
     private static final Logger logger = LoggerFactory.getLogger(ProtobufUtils.class);
 
+    /*
+    Xml、Json是目前常用的数据交换格式，它们直接使用字段名称维护序列化后类实例中字段与数据之间的映射关系，
+    一般用字符串的形式保存在序列化后的字节流中。消息和消息的定义相对独立，可读性较好。但序列化后的数据字节很大，
+    序列化和反序列化的时间较长，数据传输效率不高。
+
+    Protobuf和Xml、Json序列化的方式不同，采用了二进制字节的序列化方式，用字段索引和字段类型通过算法计算得到字段之前的关系映射，
+    从而达到更高的时间效率和空间效率，特别适合对数据大小和传输速率比较敏感的场合使用。
+     */
     public static <T> T parseProtoObject(com.google.protobuf.Parser<T> protoParser, byte[] protoString) throws com.google.protobuf.InvalidProtocolBufferException {
         T messageV3;
         try {

@@ -24,7 +24,7 @@ public class ObjectTransform {
 
     public ObjectTransform() {
     }
-
+    // javaBean: 一种类的规格编写规范; 含有setXxx()或者getXxx()方法的类都可以称之为javaBean
     public static String bean2Json(Object object) {
         if (object == null) {
             return "";
