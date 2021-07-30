@@ -35,13 +35,13 @@ public class HeteroLRHost extends HeteroLR implements Returnable {
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputData) {
         HashMap<String, Object> result = new HashMap<>(8);
         Map<String, Double> ret = Maps.newHashMap();
-        if(MetaInfo.PROPERTY_LR_USE_PARALLEL){
+        if(MetaInfo.PROPERTY_LR_USE_PARALLEL){   //默认为false
             ret = forwardParallel(inputData);
         }
         else{
             ret = forward(inputData);
         }
         result.put(Dict.SCORE, ret.get(Dict.SCORE));
-        return result;
+        return result;   //该结果将由系统调度给guest
     }
 }

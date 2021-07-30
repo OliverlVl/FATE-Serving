@@ -61,7 +61,7 @@ public abstract class BaseComponent implements LocalInferenceAware {
         return ProtobufUtils.parseProtoObject(protoParser, protoString);
     }
 
-
+    //计算context对于features的特征命中率
     public Map<String, Double> featureHitRateStatistics(Context context, Set<String> features) {
         Map<String, Object> data = (Map)context.getData(Dict.ORIGINAL_PREDICT_DATA);
         if(logger.isDebugEnabled()) {
@@ -79,8 +79,8 @@ public abstract class BaseComponent implements LocalInferenceAware {
         double featureHitRate = -1.0;
         double inputDataHitRate = -1.0;
         try {
-            featureHitRate = 1.0 * featureHit / featureShape;
-            inputDataHitRate = 1.0 * featureHit / inputDataShape;
+            featureHitRate = 1.0 * featureHit / featureShape;   //模型特征命中率
+            inputDataHitRate = 1.0 * featureHit / inputDataShape;   //输入特征命中率
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -92,7 +92,7 @@ public abstract class BaseComponent implements LocalInferenceAware {
         return ret;
     }
 
-
+    //guest处理host发来的结果？
     protected Map<String, Object> handleRemoteReturnData(Map<String, Object> hostData) {
         Map<String, Object> result = new HashMap<>(8);
         result.put(Dict.RET_CODE, StatusCode.SUCCESS);

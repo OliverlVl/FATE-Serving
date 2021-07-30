@@ -44,8 +44,8 @@ public class Imputer {
             if (inputData.containsKey(col)) {
                 String value = inputData.get(col).toString();
                 //搜索变量是否在离线训练时候进行过缺失值处理
-                if (this.missingValueSet.contains(value.toLowerCase())) {
-                    //对进行过异常值处理的变量对应的值，搜索是否在missingReplaceValues中，若在，用替换值替代
+                if (this.missingValueSet.contains(value.toLowerCase())) {   //小写转换
+                    //对进行过缺失值处理的变量对应的值，搜索是否在missingReplaceValues中，若在，用替换值替代
                     output.put(col, this.missingReplaceValues.get(col));
                 } else {
                     output.put(col, inputData.get(col));

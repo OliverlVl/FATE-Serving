@@ -153,7 +153,7 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
                 continue;
             }
             treeNodeIds[i] = this.traverseTree(i, treeNodeIds[i], fidValueMapping);
-            //如果某棵树遇到host节点，则将host节点记录
+            //如果某棵树遇到host节点，则将host节点记录，将其发给host以期返回下一个分支
             if (!this.isLocateInLeaf(i, treeNodeIds[i])) {
                 treeLocation.put(String.valueOf(i), treeNodeIds[i]);
             }
@@ -189,7 +189,7 @@ public class HeteroSecureBoostingTreeGuest extends HeteroSecureBoost implements 
                 }
             }
             Map<String, Object> onePartyData = (Map<String, Object>) v;
-            Map<String, Object> remoteComopnentData = (Map<String, Object>) onePartyData.get(this.getComponentName());
+            Map<String, Object> remoteComopnentData = (Map<String, Object>) onePartyData.get(this.getComponentName());  //获得Host方的路由表
             double remoteScore;
             if (remoteComopnentData == null) {
                 remoteComopnentData = onePartyData;

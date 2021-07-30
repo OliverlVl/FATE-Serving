@@ -33,13 +33,14 @@ public abstract class HeteroLR extends BaseComponent {
     private Map<String, Double> weight;
     private Double intercept;
 
+    //模型初始化
     @Override
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init HeteroLR class");
         try {
             LRModelParam lrModelParam = this.parseModel(LRModelParam.parser(), protoParam);
             this.weight = lrModelParam.getWeightMap();
-            this.intercept = lrModelParam.getIntercept();
+            this.intercept = lrModelParam.getIntercept();   //bias
         } catch (Exception ex) {
             ex.printStackTrace();
             return ILLEGALDATA;
@@ -48,6 +49,8 @@ public abstract class HeteroLR extends BaseComponent {
         return OK;
     }
 
+    //模型评分
+    //计算score = weight * value + intercept, 若是host方，则intercept为0
     Map<String, Double> forward(List<Map<String, Object>> inputDatas) {
         Map<String, Object> inputData = inputDatas.get(0);
         int modelWeightHitCount = 0;
@@ -110,7 +113,7 @@ public abstract class HeteroLR extends BaseComponent {
             logger.debug("input data features number:{}", inputFeaturesNum);
         }
         double score = 0;
-        ForkJoinTask<LRTaskResult> result = forkJoinPool.submit(new LRTask(weight, inputData, Lists.newArrayList(joinKeys)));
+        ForkJoinTask<LRTaskResult> result = forkJoinPool.submit(new LRTask(weight, inputData, Lists.newArrayList(joinKeys)));   //多线程
         if (result != null) {
             try {
                 LRTaskResult lrTaskResult = result.get();
@@ -130,7 +133,7 @@ public abstract class HeteroLR extends BaseComponent {
         return ret;
     }
 
-    public class LRTask extends RecursiveTask<LRTaskResult> {
+    public class LRTask extends RecursiveTask<LRTaskResult> {   //任务分割
 
         double modelWeightHitRate = -1.0;
         double inputDataHitRate = -1.0;
@@ -149,7 +152,7 @@ public abstract class HeteroLR extends BaseComponent {
             double score = 0;
             int modelWeightHitCount = 0;
             int inputDataHitCount = 0;
-            if (keys.size() <= splitSize) {
+            if (keys.size() <= splitSize) { //任务大小<=splitSize，开始计算得分
                 for (String key : keys) {
                     inputData.get(key);
                     if (this.weight.containsKey(key)) {
@@ -163,20 +166,20 @@ public abstract class HeteroLR extends BaseComponent {
                         }
                     }
                 }
-            } else {
+            } else {    //任务分解
                 List<List<Integer>> splits = new ArrayList<List<Integer>>();
                 int size = keys.size();
                 int count = (size + splitSize - 1) / splitSize;
                 List<LRTask> subJobs = Lists.newArrayList();
-                for (int i = 0; i < count; i++) {
+                for (int i = 0; i < count; i++) {   //分解为subList
                     List<String> subList = keys.subList(i * splitSize, ((i + 1) * splitSize > size ? size : splitSize * (i + 1)));
                     // logger.info("new subLRTask {}",i);
                     LRTask subLRTask = new LRTask(weight, inputData, subList);
-                    subLRTask.fork();
+                    subLRTask.fork();   //创建进程
                     subJobs.add(subLRTask);
                 }
                 for (LRTask lrTask : subJobs) {
-                    LRTaskResult subResult = lrTask.join();
+                    LRTaskResult subResult = lrTask.join(); //执行lrTask，返回结果
                     if (subResult != null) {
                         score = score + subResult.score;
                         modelWeightHitCount = modelWeightHitCount + subResult.modelWeightHitCount;

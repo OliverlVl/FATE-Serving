@@ -33,9 +33,9 @@ public class MinMaxScale {
                 if (scales.containsKey(key)) {
                     ColumnScaleParam scale = scales.get(key);
                     double value = Double.parseDouble(inputData.get(key).toString());
-                    if (value > scale.getColumnUpper()) {
+                    if (value > scale.getColumnUpper()) {   //上限
                         value = 1;
-                    } else if (value < scale.getColumnLower()) {
+                    } else if (value < scale.getColumnLower()) {    //下限
                         value = 0;
                     } else {
                         double range = scale.getColumnUpper() - scale.getColumnLower();

@@ -57,7 +57,7 @@ public class HeteroSecureBoostingTreeHost extends HeteroSecureBoost implements L
                     logger.info("best fid is {}", fid);
                     logger.info("best split val is {}", splitValue);
                 }
-
+                //对于该预测的样本，对于所有自身拥有的Host节点，判断该样本的遍历方向（向左还是向右），并把所有的路由方向记录下来。
                 if (input.containsKey(Integer.toString(fid))) {
                     Object featVal = input.get(Integer.toString(fid));
                     direction = Double.parseDouble(featVal.toString()) <= splitValue + 1e-20;
@@ -80,7 +80,7 @@ public class HeteroSecureBoostingTreeHost extends HeteroSecureBoost implements L
     @Override
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> request) {
         String tag = context.getCaseId() + "." + this.componentName + "." + Dict.INPUT_DATA;
-        Map<String, Object> input = request.get(0);
+        Map<String, Object> input = request.get(0); //host接收到推理请求
         Map<String, Object> ret = new HashMap<String, Object>(8);
         HashMap<String, Object> fidValueMapping = new HashMap<String, Object>(8);
         int featureHit = 0;
@@ -90,7 +90,7 @@ public class HeteroSecureBoostingTreeHost extends HeteroSecureBoost implements L
                 ++featureHit;
             }
         }
-        ret = this.extractHostNodeRoute(fidValueMapping);
+        ret = this.extractHostNodeRoute(fidValueMapping);   //提取本地节点路由
         return ret;
     }
 }

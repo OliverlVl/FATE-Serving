@@ -25,7 +25,7 @@ public class ProtobufUtils {
     public static <T> T parseProtoObject(com.google.protobuf.Parser<T> protoParser, byte[] protoString) throws com.google.protobuf.InvalidProtocolBufferException {
         T messageV3;
         try {
-            messageV3 = protoParser.parseFrom(protoString);
+            messageV3 = protoParser.parseFrom(protoString); //将字节数组protocolString的消息解析为parseProtoObject
             if (logger.isDebugEnabled()) {
                 logger.debug("parse {} proto object normal", messageV3.getClass().getSimpleName());
             }

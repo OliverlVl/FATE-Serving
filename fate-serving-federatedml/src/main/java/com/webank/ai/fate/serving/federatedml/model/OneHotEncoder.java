@@ -94,7 +94,7 @@ public class OneHotEncoder extends BaseComponent implements LocalInferenceAware 
                 for (int i = 0; i < values.size(); i++) {
                     Integer possibleValue = Integer.parseInt(values.get(i));
                     String newColName = encodedVariables.get(i);
-                    if (inputValue.equals(possibleValue)) {
+                    if (inputValue.equals(possibleValue)) { //只支持整形数的输入
                         outputData.put(newColName, 1.0);
                     } else {
                         outputData.put(newColName, 0.0);

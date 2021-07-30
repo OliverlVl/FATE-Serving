@@ -36,7 +36,7 @@ public class ErrorMessageUtil {
 
     public static ReturnResult handleExceptionToReturnResult(Throwable e) {
         ReturnResult returnResult = new ReturnResult();
-        if (e instanceof BaseException) {
+        if (e instanceof BaseException) {   //自定义异常
             BaseException baseException = (BaseException) e;
             returnResult.setRetcode(baseException.getRetcode());
             returnResult.setRetmsg(e.getMessage());

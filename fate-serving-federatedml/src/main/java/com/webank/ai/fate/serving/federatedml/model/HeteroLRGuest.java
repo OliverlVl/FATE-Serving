@@ -42,7 +42,7 @@ public class HeteroLRGuest extends HeteroLR implements MergeInferenceAware, Retu
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> input
     ) {
         Map<String, Object> result = new HashMap<>(8);
-        Map<String, Double> forwardRet = forward(input);
+        Map<String, Double> forwardRet = forward(input);    //guest执行前向计算
         double score = forwardRet.get(Dict.SCORE);
         result.put(Dict.SCORE, score);
         return result;
@@ -76,6 +76,7 @@ public class HeteroLRGuest extends HeteroLR implements MergeInferenceAware, Retu
                             throw new GuestMergeException("host data score is null");
                         }
                     }
+                    //组合host和guest的结果，得到最终评分
                     score = localScore;
                     score += remoteScore;
                     double prob = sigmod(score);

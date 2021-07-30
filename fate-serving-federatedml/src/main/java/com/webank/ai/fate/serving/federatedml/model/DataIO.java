@@ -44,13 +44,13 @@ public class DataIO extends BaseComponent {
         try {
             this.dataIOMeta = this.parseModel(DataIOMeta.parser(), protoMeta);
             this.dataIOParam = this.parseModel(DataIOParam.parser(), protoParam);
-            this.isImputer = this.dataIOMeta.getImputerMeta().getIsImputer();
+            this.isImputer = this.dataIOMeta.getImputerMeta().getIsImputer();   //缺失值
             logger.info("data io isImputer {}", this.isImputer);
             if (this.isImputer) {
                 this.imputer = new Imputer(this.dataIOMeta.getImputerMeta().getMissingValueList(),
                         this.dataIOParam.getImputerParam().getMissingReplaceValue());
             }
-            this.isOutlier = this.dataIOMeta.getOutlierMeta().getIsOutlier();
+            this.isOutlier = this.dataIOMeta.getOutlierMeta().getIsOutlier();   //异常值
             logger.info("data io isOutlier {}", this.isOutlier);
             if (this.isOutlier) {
                 this.outlier = new Outlier(this.dataIOMeta.getOutlierMeta().getOutlierValueList(),
@@ -67,6 +67,7 @@ public class DataIO extends BaseComponent {
         return OK;
     }
 
+    //判断输入数据格式，对缺失值和异常值进行处理
     @Override
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputData) {
         Map<String, Object> data = inputData.get(0);
