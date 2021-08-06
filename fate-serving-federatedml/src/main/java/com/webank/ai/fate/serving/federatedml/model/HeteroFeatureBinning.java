@@ -43,13 +43,15 @@ public class HeteroFeatureBinning extends BaseComponent {
         this.needRun = false;
         this.splitPoints = new HashMap<>(8);
         try {
+            //对输入的Meta和Param两个序列化的模型文件进行反序列化
             FeatureBinningMeta featureBinningMeta = this.parseModel(FeatureBinningMeta.parser(), protoMeta);
-            this.needRun = featureBinningMeta.getNeedRun();
+            //从离线模型中继承参数
+            this.needRun = featureBinningMeta.getNeedRun(); //是否需要执行，如果为否，这个组件在后续预测时将被跳过
             TransformMeta transformMeta = featureBinningMeta.getTransformParam();
-            this.transformCols = transformMeta.getTransformColsList();
+            this.transformCols = transformMeta.getTransformColsList();  //需要对哪些列做转化
             FeatureBinningParam featureBinningParam = this.parseModel(FeatureBinningParam.parser(), protoParam);
             this.header = featureBinningParam.getHeaderList();
-            FeatureBinningResult featureBinningResult = featureBinningParam.getBinningResult();
+            FeatureBinningResult featureBinningResult = featureBinningParam.getBinningResult(); //特征分箱后的结果。其中，包含每个特征的iv(?)，分箱点，woe等
             Map<String, IVParam> binningResult = featureBinningResult.getBinningResultMap();
             for (String key : binningResult.keySet()) {
                 IVParam oneColResult = binningResult.get(key);
@@ -64,6 +66,7 @@ public class HeteroFeatureBinning extends BaseComponent {
         return OK;
     }
 
+    //在本地进行转化功能，将数据和模型结果中的splitPoint比较，确定属于哪个分箱后，用分箱的index代替原值
     @Override
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputData) {
         HashMap<String, Object> outputData = new HashMap<>(8);
@@ -73,22 +76,22 @@ public class HeteroFeatureBinning extends BaseComponent {
             return firstData;
         }
         for (int i = 0; i < this.header.size(); i++) {
-            headerMap.put(this.header.get(i), (long) i);
+            headerMap.put(this.header.get(i), (long) i);  //特征列
         }
         for (String colName : firstData.keySet()) {
             try {
-                if (!this.splitPoints.containsKey(colName)) {
+                if (!this.splitPoints.containsKey(colName)) {   //该列没有分裂点，直接输出
                     outputData.put(colName, firstData.get(colName));
                     continue;
                 }
-                Long thisColIndex = headerMap.get(colName);
-                if (!this.transformCols.contains(thisColIndex)) {
+                Long thisColIndex = headerMap.get(colName); //当前列的序号
+                if (!this.transformCols.contains(thisColIndex)) {   //该列不分箱，直接输出
                     outputData.put(colName, firstData.get(colName));
                     continue;
                 }
                 List<Double> splitPoint = this.splitPoints.get(colName);
                 Double colValue = Double.valueOf(firstData.get(colName).toString());
-                int colIndex = Collections.binarySearch(splitPoint, colValue);
+                int colIndex = Collections.binarySearch(splitPoint, colValue);  //分裂点序号
                 if (colIndex < 0) {
                     colIndex = Math.min((- colIndex - 1), splitPoint.size() - 1);
                 }

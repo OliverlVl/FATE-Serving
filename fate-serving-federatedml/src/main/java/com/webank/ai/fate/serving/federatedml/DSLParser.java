@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+//解析dsl文件，获得components以及component之间的连接情况
 public class DSLParser {
     private static final Logger logger = LoggerFactory.getLogger(DSLParser.class);
     private HashMap<String, String> componentModuleMap = new HashMap<String, String>();
@@ -99,31 +100,33 @@ public class DSLParser {
         int index = 0;
         Iterator<String> componentNames = components.keys();
 
-        while (componentNames.hasNext()) {
+        while (componentNames.hasNext()) {  //判断是否存在下一个元素
             String componentName = componentNames.next();
             componentIndexMapping.put(componentName, index);
             ++index;
-            componentList.add(componentName);
+            componentList.add(componentName);   //componentList记录dsl文件中的components
         }
 
         int[] inDegree = new int[index];
-        HashMap<Integer, ArrayList<Integer>> edges = new HashMap<Integer, ArrayList<Integer>>(8);
+        HashMap<Integer, ArrayList<Integer>> edges = new HashMap<Integer, ArrayList<Integer>>(8);   //记录组件之间相连情况
 
         for (int i = 0; i < componentList.size(); ++i) {
             String componentName = componentList.get(i);
             JSONObject component = components.getJSONObject(componentName);
             JSONObject upData = null;
+            //获得每个component的"input"-"data"
             if (component.has(Dict.DSL_INPUT) && component.getJSONObject(Dict.DSL_INPUT).has(Dict.DSL_DATA)) {
                 upData = component.getJSONObject(Dict.DSL_INPUT).getJSONObject(Dict.DSL_DATA);
             }
             Integer componentId = componentIndexMapping.get(componentName);
+            //根据当前组件input中的数据，去找输出该数据的上一个组件
             if (upData != null) {
-                Iterator<String> dataKeyIterator = upData.keys();
+                Iterator<String> dataKeyIterator = upData.keys(); //一般是"data" or "train_data"+"eval_data"
                 while (dataKeyIterator.hasNext()) {
                     String dataKey = dataKeyIterator.next();
                     JSONArray data = upData.getJSONArray(dataKey);
                     for (int j = 0; j < data.length(); j++) {
-                        String upComponent = data.getString(j).split("\\.", -1)[0];
+                        String upComponent = data.getString(j).split("\\.", -1)[0]; //例如"args.eval_data"/"dataio_0.train"，获得args/dataio_0
                         int upComponentId = -1;
                         if (!"args".equals(upComponent)) {
                             upComponentId = componentIndexMapping.get(upComponent);

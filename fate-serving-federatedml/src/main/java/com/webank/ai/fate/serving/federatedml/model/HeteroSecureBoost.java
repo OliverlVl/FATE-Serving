@@ -38,6 +38,7 @@ public abstract class HeteroSecureBoost extends BaseComponent {
     protected int treeDim;
     protected double learningRate;
 
+    //模型初始化
     @Override
     public int initModel(byte[] protoMeta, byte[] protoParam) {
         logger.info("start init HeteroLR class");
@@ -49,8 +50,8 @@ public abstract class HeteroSecureBoost extends BaseComponent {
             featureNameMapping.forEach((k, v) -> {
                 featureNameFidMapping.put(v, k);
             });
-            //初始化
-            this.treeNum = param.getTreeNum();
+            //初始化相关的类属性
+            this.treeNum = param.getTreeNum();  //树的数量
             this.initScore = param.getInitScoreList();  //boost的初始化得分，具体可参考FATE离线建模文档
             this.trees = param.getTreesList();  //具体的树信息列表，可参考对应的DecisionTreeModelParam
             this.numClasses = param.getNumClasses();    //多少类，二分类问题为2，多分类问题则为具体分类数，回归问题为0，通过该字段可以判断具体建模任务类型
@@ -66,7 +67,7 @@ public abstract class HeteroSecureBoost extends BaseComponent {
         return OK;
     }
 
-    //离线的时候，每个树节点的域信息是partyid，如host:10000，通过该函数获取$role
+    //离线的时候，每个树节点的域信息是role：partyid，如host:10000，通过该函数获取$role
     protected String getSite(int treeId, int treeNodeId) {
         return this.trees.get(treeId).getTree(treeNodeId).getSitename().split(":", -1)[0];
     }

@@ -57,7 +57,7 @@ public class BaseException extends RuntimeException {
     protected int retcode;
 
     public BaseException(int retCode, String message) {
-        super(message);
+        super(message); //调用RuntimeException的构造函数，给父类赋值
         this.retcode = retCode;
     }
 

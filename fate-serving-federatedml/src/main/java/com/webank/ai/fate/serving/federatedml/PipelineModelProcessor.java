@@ -51,8 +51,9 @@ public class PipelineModelProcessor implements ModelProcessor {
     private Map<String, BaseComponent> componentMap = new HashMap<String, BaseComponent>();
     private DSLParser dslParser = new DSLParser();
     private String modelPackage = "com.webank.ai.fate.serving.federatedml.model";
-    private int splitSize = MetaInfo.PROPERTY_BATCH_SPLIT_SIZE;
+    private int splitSize = MetaInfo.PROPERTY_BATCH_SPLIT_SIZE; //并行任务数？
 
+    //执行guest方推理逻辑，调用batchLocalInference获得本地推理结果，与host方返回的结果进行合并
     @Override
     public BatchInferenceResult guestBatchInference(Context context, BatchInferenceRequest batchInferenceRequest, Map<String, Future> remoteFutureMap, long timeout) {
         BatchInferenceResult batchFederatedResult = new BatchInferenceResult();
@@ -65,7 +66,7 @@ public class PipelineModelProcessor implements ModelProcessor {
                 if (StatusCode.SUCCESS != remoteInferenceResult.getRetcode()) {
                     throw new RemoteRpcException(transformRemoteErrorCode(remoteInferenceResult.getRetcode()), buildRemoteRpcErrorMsg(remoteInferenceResult.getRetcode(), remoteInferenceResult.getRetmsg()));
                 }
-                remoteResultMap.put(partyId, remoteInferenceResult);
+                remoteResultMap.put(partyId, remoteInferenceResult);    //guest获得host方返回的数据
             } catch (Exception e) {
                 if (!(e instanceof RemoteRpcException)) {
                     throw new RemoteRpcException("party id " + partyId + " remote error");
@@ -76,7 +77,7 @@ public class PipelineModelProcessor implements ModelProcessor {
                 context.setDownstreamCost(System.currentTimeMillis() - context.getDownstreamBegin());
             }
         });
-        batchFederatedResult = batchMergeHostResult(context, localResult, remoteResultMap);
+        batchFederatedResult = batchMergeHostResult(context, localResult, remoteResultMap); //guest方执行合并
         return batchFederatedResult;
     }
 
@@ -87,6 +88,7 @@ public class PipelineModelProcessor implements ModelProcessor {
      * @param batchHostFederatedParams
      * @return
      */
+    //执行host方推理逻辑，调用batchLocalInference获得本地推理结果
     @Override
     public BatchInferenceResult hostBatchInference(Context context, BatchHostFederatedParams batchHostFederatedParams) {
         Map<Integer, Map<String, Object>> localResult = batchLocalInference(context, batchHostFederatedParams);
@@ -108,10 +110,10 @@ public class PipelineModelProcessor implements ModelProcessor {
 
     @Override
     public ReturnResult guestInference(Context context, InferenceRequest inferenceRequest, Map<String, Future> futureMap, long timeout) {
-        Map<String, Object> localResult = singleLocalPredict(context, inferenceRequest.getFeatureData());
+        Map<String, Object> localResult = singleLocalPredict(context, inferenceRequest.getFeatureData());   //guest先在本地进行推理得到结果
         ReturnResult remoteResult = new ReturnResult();
         Map<String, Object> remoteResultMap = Maps.newHashMap();
-        futureMap.forEach((partId, future) -> {
+        futureMap.forEach((partId, future) -> { //获得远端返回数据
             try {
                 ReturnResult remoteReturnResult = (ReturnResult) future.get(timeout, TimeUnit.MILLISECONDS);
                 if (remoteReturnResult != null) {
@@ -128,7 +130,7 @@ public class PipelineModelProcessor implements ModelProcessor {
                 context.setDownstreamCost(System.currentTimeMillis() - context.getDownstreamBegin());
             }
         });
-        Map<String, Object> tempResult = singleMerge(context, localResult, remoteResultMap);
+        Map<String, Object> tempResult = singleMerge(context, localResult, remoteResultMap);    //合并
         int retcode = (int) tempResult.get(Dict.RET_CODE);
         String message = tempResult.get(Dict.MESSAGE) == null ? "" : tempResult.get(Dict.MESSAGE).toString();
         tempResult.remove(Dict.RET_CODE);
@@ -139,6 +141,7 @@ public class PipelineModelProcessor implements ModelProcessor {
         return remoteResult;
     }
 
+    //host仅在本地进行推理
     @Override
     public ReturnResult hostInference(Context context, InferenceRequest InferenceRequest) {
         Map<String, Object> featureData = InferenceRequest.getFeatureData();
@@ -154,13 +157,14 @@ public class PipelineModelProcessor implements ModelProcessor {
         return this.componentMap.get(name);
     }
 
+    //根据pipeline（.py）文件初始化模型
     public int initModel(Map<String, byte[]> modelProtoMap) {
         if (modelProtoMap != null) {
             logger.info("start init pipeline,model components {}", modelProtoMap.keySet());
             try {
                 Map<String, byte[]> newModelProtoMap = changeModelProto(modelProtoMap);
                 logger.info("after parse pipeline {}", newModelProtoMap.keySet());
-                Preconditions.checkArgument(newModelProtoMap.get(PIPLELINE_IN_MODEL) != null);
+                Preconditions.checkArgument(newModelProtoMap.get(PIPLELINE_IN_MODEL) != null);  //检查参数
                 PipelineProto.Pipeline pipeLineProto = PipelineProto.Pipeline.parseFrom(newModelProtoMap.get(PIPLELINE_IN_MODEL));
                 String dsl = pipeLineProto.getInferenceDsl().toStringUtf8();
                 dslParser.parseDagFromDSL(dsl);
@@ -172,7 +176,7 @@ public class PipelineModelProcessor implements ModelProcessor {
                     logger.info("try to get class:{}", className);
                     try {
                         Class modelClass = Class.forName(this.modelPackage + "." + className);
-                        BaseComponent mlNode = (BaseComponent) modelClass.getConstructor().newInstance();
+                        BaseComponent mlNode = (BaseComponent) modelClass.getConstructor().newInstance();   //定义算法组件
                         mlNode.setComponentName(componentName);
                         byte[] protoMeta = newModelProtoMap.get(componentName + ".Meta");
                         byte[] protoParam = newModelProtoMap.get(componentName + ".Param");
@@ -201,6 +205,7 @@ public class PipelineModelProcessor implements ModelProcessor {
         }
     }
 
+    //并行执行LocalInferenceTask
     public Map<Integer, Map<String, Object>> batchLocalInference(Context context,
                                                                  BatchInferenceRequest batchFederatedParams) {
         long  begin =  System.currentTimeMillis();
@@ -218,6 +223,7 @@ public class PipelineModelProcessor implements ModelProcessor {
         return result;
     }
 
+    //并行执行MergeTask
     private BatchInferenceResult batchMergeHostResult(Context context, Map<Integer, Map<String, Object>> localResult, Map<String, BatchInferenceResult> remoteResult) {
         long begin = System.currentTimeMillis();
         try {
@@ -281,7 +287,7 @@ public class PipelineModelProcessor implements ModelProcessor {
             }
             if (component != null) {
                 Map<String, Object> mergeResult = null;
-                if (component instanceof MergeInferenceAware) {
+                if (component instanceof MergeInferenceAware) { //实现MergeInferenceAware接口的组件可以执行合并远端返回数据的逻辑
                     String componentResultKey = component.getComponentName();
                     mergeResult = ((MergeInferenceAware) component).mergeRemoteInference(context, inputs, remoteData);
                     outputData.add(mergeResult);
@@ -302,6 +308,7 @@ public class PipelineModelProcessor implements ModelProcessor {
         return result;
     }
 
+    //执行推理
     public Map<String, Object> singleLocalPredict(Context context, Map<String, Object> inputData) {
         List<Map<String, Object>> outputData = Lists.newArrayList();
         List<Map<String, Object>> tempList = Lists.newArrayList();
@@ -342,7 +349,7 @@ public class PipelineModelProcessor implements ModelProcessor {
                     if (logger.isDebugEnabled()) {
                         logger.debug("component {} is Returnable return data {}", component, result);
                     }
-                    if (StringUtils.isBlank(context.getVersion()) || Double.parseDouble(context.getVersion()) < 200) {
+                    if (StringUtils.isBlank(context.getVersion()) || Double.parseDouble(context.getVersion()) < 200) {  //？
                         result.putAll(componentResult);
                     }
                 }
@@ -375,6 +382,7 @@ public class PipelineModelProcessor implements ModelProcessor {
         return newModelProtoMap;
     }
 
+    //本地模型处理
     class LocalInferenceTask extends RecursiveTask<Map<Integer, Map<String, Object>>> {
         Context context;
         Map<String, Map<String, Object>> tempCache;
@@ -385,6 +393,7 @@ public class PipelineModelProcessor implements ModelProcessor {
             this.tempCache = tempCache;
         }
 
+        //如果输入（inputList）大小在一个batch之内，则加密输入特征，调用singleLocalPredict获得推理结果，否则切分subJobs，并串行执行各个子任务之后，将结果合并
         @Override
         protected Map<Integer, Map<String, Object>> compute() {
                 Map<Integer, Map<String, Object>> result = new HashMap<>();
@@ -392,12 +401,12 @@ public class PipelineModelProcessor implements ModelProcessor {
                     for (int i = 0; i < inputList.size(); i++) {
                         BatchInferenceRequest.SingleInferenceData input = inputList.get(i);
                         try {
-                            String key = EncryptUtils.encrypt(JsonUtil.object2Json(input.getFeatureData()), EncryptMethod.MD5);
+                            String key = EncryptUtils.encrypt(JsonUtil.object2Json(input.getFeatureData()), EncryptMethod.MD5); //加密
                             Map<String, Object> singleResult = tempCache.get(key);
                             if (singleResult == null) {
                                 singleResult = singleLocalPredict(context, input.getFeatureData());
                                 if (singleResult != null && singleResult.size() != 0) {
-                                    tempCache.putIfAbsent(key, singleResult);
+                                    tempCache.putIfAbsent(key, singleResult);   //tempCache存储与特征对应的推理结果
                                 }
                             } else {
                                 singleResult = Maps.newHashMap(tempCache.get(key));
@@ -425,13 +434,13 @@ public class PipelineModelProcessor implements ModelProcessor {
                     for (int i = 0; i < count; i++) {
                         List<BatchInferenceRequest.SingleInferenceData> subList = inputList.subList(i * splitSize, ((i + 1) * splitSize > size ? size : splitSize * (i + 1)));
                         LocalInferenceTask subLocalInferenceTask = new LocalInferenceTask(context, subList, tempCache);
-                        subLocalInferenceTask.fork();
+                        subLocalInferenceTask.fork();   //创建子进程
                         subJobs.add(subLocalInferenceTask);
                     }
                     subJobs.forEach(localInferenceTask -> {
-                        Map<Integer, Map<String, Object>> splitResult = localInferenceTask.join();
+                        Map<Integer, Map<String, Object>> splitResult = localInferenceTask.join();  //等待线程localInferenceTask执行完
                         if (splitResult != null) {
-                            result.putAll(splitResult);
+                            result.putAll(splitResult); //将splitResult中的所有key，value都放在result中（追加的方式）
                         }
                     });
                     return result;

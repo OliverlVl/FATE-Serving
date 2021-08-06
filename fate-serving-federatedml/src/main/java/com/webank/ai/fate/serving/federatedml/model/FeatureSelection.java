@@ -52,6 +52,7 @@ public class FeatureSelection extends BaseComponent {
         return OK;
     }
 
+    //在本地进行
     @Override
     public Map<String, Object> localInference(Context context, List<Map<String, Object>> inputData) {
         HashMap<String, Object> outputData = new HashMap<>(8);
