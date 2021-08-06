@@ -37,10 +37,13 @@ public class InferenceUtils {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    // 反射
+    // 我们利用反射和配置文件，可以使：应用程序更新时，对源码无需进行任何修改
+    // 我们只需要将新类发送给客户端，并修改配置文件即可
     public static Object getClassByName(String classPath) {
         try {
-            Class thisClass = Class.forName(classPath);
-            return thisClass.getConstructor().newInstance();
+            Class thisClass = Class.forName(classPath); // 加载Class对象
+            return thisClass.getConstructor().newInstance(); //创建实例
         } catch (ClassNotFoundException ex) {
             logger.error("Can not found this class: {}.", classPath);
         } catch (NoSuchMethodException ex) {

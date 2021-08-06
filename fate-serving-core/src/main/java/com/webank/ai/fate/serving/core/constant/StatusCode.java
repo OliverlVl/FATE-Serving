@@ -15,7 +15,7 @@
  */
 
 package com.webank.ai.fate.serving.core.constant;
-
+// 状态码
 public class StatusCode {
 
     public static final int SUCCESS = 0;
