@@ -37,6 +37,7 @@ public class FederationRouterInterceptor extends AbstractInterceptor {
     @Autowired(required = false)
     RouterService routerService;
 
+    //rpc调用时会使用注册中心中的地址进行路由
     @Override
     public void doPreProcess(Context context, InboundPackage inboundPackage, OutboundPackage outboundPackage) throws Exception {
         RouterInfo routerInfo = new RouterInfo();

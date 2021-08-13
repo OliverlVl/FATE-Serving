@@ -42,20 +42,23 @@ public class ModelService extends ModelServiceGrpc.ModelServiceImplBase {
     @Autowired
     ModelServiceProvider modelServiceProvider;
 
+    //服务端：实现类根据req请求取到参数，然后生成返回值，调用StreamObserver回调接口，来通知Grpc框架层发送返回值给客户端。
     @Override
     @RegisterService(serviceName = "publishLoad")
+    //StreamObserver：回调接口，responseObserver：回调函数，回调函数由Grpc框架提供，可以理解为Grpc框架层在关注PublishResponse类型的返回值的生成，然后使用协议层及io层做数据发送
     public synchronized void publishLoad(PublishRequest req, StreamObserver<PublishResponse> responseObserver) {
         Context context = prepareContext(ModelActionType.MODEL_LOAD.name());
         InboundPackage<PublishRequest> inboundPackage = new InboundPackage();
         inboundPackage.setBody(req);
-        OutboundPackage outboundPackage = modelServiceProvider.service(context, inboundPackage);
+        OutboundPackage outboundPackage = modelServiceProvider.service(context, inboundPackage);    //提供服务
         ReturnResult returnResult = (ReturnResult) outboundPackage.getData();
         PublishResponse.Builder builder = PublishResponse.newBuilder();
         builder.setStatusCode(Integer.valueOf(returnResult.getRetcode()));
         builder.setMessage(returnResult.getRetmsg() != null ? returnResult.getRetmsg() : "");
         builder.setData(ByteString.copyFrom(JsonUtil.object2Json(returnResult.getData()).getBytes()));
-        responseObserver.onNext(builder.build());
-        responseObserver.onCompleted();
+        //onNext和onComplete方法均会调用内部的ServerCall实例发送消息
+        responseObserver.onNext(builder.build());   //每一次对onNext的调用都代表一条消息的发送
+        responseObserver.onCompleted(); //如果全部发送完了或者发送出错，那么就需要调用onError或者onComplete来告知对方本次stream已经结束
     }
 
     @Override

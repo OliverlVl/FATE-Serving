@@ -19,6 +19,7 @@ package com.webank.ai.fate.serving.common.bean;
 import com.webank.ai.fate.serving.common.model.Model;
 import com.webank.ai.fate.serving.core.bean.Dict;
 
+//模型和数据
 public class ServingServerContext extends BaseContext {
 
     String tableName;

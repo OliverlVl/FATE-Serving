@@ -62,6 +62,7 @@ public class GuestSingleInferenceProvider extends AbstractServingServiceProvider
             ListenableFuture<ReturnResult> future = federatedRpcInvoker.singleInferenceRpcWithCache(context, rpcDataWraper, MetaInfo.PROPERTY_REMOTE_MODEL_INFERENCE_RESULT_CACHE_SWITCH);
             futureMap.put(rpcDataWraper.getHostModel().getPartId(), future);
         }));
+        //执行推理逻辑
         ReturnResult returnResult = modelProcessor.guestInference(context, inferenceRequest, futureMap, MetaInfo.PROPERTY_SINGLE_INFERENCE_RPC_TIMEOUT);
         postProcess(context, returnResult);
         return returnResult;

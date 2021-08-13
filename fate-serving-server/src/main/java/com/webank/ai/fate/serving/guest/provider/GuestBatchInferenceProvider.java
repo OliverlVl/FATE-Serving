@@ -53,14 +53,16 @@ public class GuestBatchInferenceProvider extends AbstractServingServiceProvider<
         ModelProcessor modelProcessor = model.getModelProcessor();
         BatchInferenceRequest batchInferenceRequest = (BatchInferenceRequest) inboundPackage.getBody();
         Map futureMap = Maps.newHashMap();
+        //guest将请求发送给host？
         model.getFederationModelMap().forEach((hostPartyId, remoteModel) -> {
             BatchHostFederatedParams batchHostFederatedParams = buildBatchHostFederatedParams(context, batchInferenceRequest, model, remoteModel);
             ListenableFuture<BatchInferenceResult> originBatchResultFuture = federatedRpcInvoker.batchInferenceRpcWithCache(context, buildRpcDataWraper(model, remoteModel, batchHostFederatedParams), MetaInfo.PROPERTY_REMOTE_MODEL_INFERENCE_RESULT_CACHE_SWITCH);
             futureMap.put(hostPartyId, originBatchResultFuture);
         });
+        //执行推理逻辑
         BatchInferenceResult batchFederatedResult = modelProcessor.guestBatchInference(context, batchInferenceRequest, futureMap, MetaInfo.PROPERTY_BATCH_INFERENCE_RPC_TIMEOUT);
         batchFederatedResult.setCaseid(context.getCaseId());
-        postProcess(context, batchFederatedResult);
+        postProcess(context, batchFederatedResult); //result中包含模型相关信息
         return batchFederatedResult;
     }
 

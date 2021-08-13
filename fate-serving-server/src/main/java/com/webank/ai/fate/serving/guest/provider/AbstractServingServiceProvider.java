@@ -72,6 +72,7 @@ public abstract class AbstractServingServiceProvider<req, resp> extends Abstract
         return result;
     }
 
+    //flow.log：该日志为访问日志，用于记录每一笔请求的到达时间、耗时、返回码、请求参数等
     @Override
     protected void printFlowLog(Context context) {
 
@@ -84,13 +85,14 @@ public abstract class AbstractServingServiceProvider<req, resp> extends Abstract
         );
     }
 
+    //？？
     protected List<FederatedRpcInvoker.RpcDataWraper> buildRpcDataWraper(Context context, String methodName, Object data) {
         List<FederatedRpcInvoker.RpcDataWraper> result = Lists.newArrayList();
-        Model model = ((ServingServerContext) context).getModel();
+        Model model = ((ServingServerContext) context).getModel();  //
         Map<String, Model> hostModelMap = model.getFederationModelMap();
-        hostModelMap.forEach((partId, hostModel) -> {
+        hostModelMap.forEach((partId, hostModel) -> {   //多方（多个host？）
             FederatedRpcInvoker.RpcDataWraper rpcDataWraper = new FederatedRpcInvoker.RpcDataWraper();
-            rpcDataWraper.setGuestModel(model);
+            rpcDataWraper.setGuestModel(model); //guest通过请求参数选择模型
             rpcDataWraper.setHostModel(hostModel);
             rpcDataWraper.setRemoteMethodName(methodName);
             rpcDataWraper.setData(data);

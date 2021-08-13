@@ -59,7 +59,7 @@ public class CommonServiceProvider extends AbstractServingServiceProvider {
     @Autowired
     FlowCounterManager flowCounterManager;
     @Autowired(required = false)
-    ZookeeperRegistry zookeeperRegistry;
+    ZookeeperRegistry zookeeperRegistry;    //zookeeper作为注册中心，管理各模块的服务注册以及发现
 
     @Override
     protected Object transformExceptionInfo(Context context, ExceptionInfo data) {

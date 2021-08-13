@@ -28,6 +28,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+//ServerBuilder是一个抽象类，不同的服务提供方（Provider），将继承实现它
 public class FateServerBuilder extends ServerBuilder {
 
     ServerBuilder serverBuilder;

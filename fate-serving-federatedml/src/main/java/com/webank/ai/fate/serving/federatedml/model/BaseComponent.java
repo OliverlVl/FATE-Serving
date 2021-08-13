@@ -79,8 +79,8 @@ public abstract class BaseComponent implements LocalInferenceAware {
         double featureHitRate = -1.0;
         double inputDataHitRate = -1.0;
         try {
-            featureHitRate = 1.0 * featureHit / featureShape;   //模型特征命中率
-            inputDataHitRate = 1.0 * featureHit / inputDataShape;   //输入特征命中率
+            featureHitRate = 1.0 * featureHit / featureShape;   //模型特征命中率(inputData中与features重合的特征占features总特征的比重)
+            inputDataHitRate = 1.0 * featureHit / inputDataShape;   //输入特征命中率(inputData中与features重合的特征占inputData总特征的比重)
         } catch (Exception ex) {
             ex.printStackTrace();
         }

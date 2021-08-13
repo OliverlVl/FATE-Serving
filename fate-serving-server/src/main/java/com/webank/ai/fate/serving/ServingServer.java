@@ -61,16 +61,22 @@ public class ServingServer implements InitializingBean {
                 MetaInfo.PROPERTY_SERVING_POOL_QUEUE_SIZE == 0 ? new SynchronousQueue<Runnable>() :
                         (MetaInfo.PROPERTY_SERVING_POOL_QUEUE_SIZE < 0 ? new LinkedBlockingQueue<Runnable>()
                                 : new LinkedBlockingQueue<Runnable>(MetaInfo.PROPERTY_SERVING_POOL_QUEUE_SIZE)), new NamedThreadFactory("ServingServer", true));
+        //创建ServerBuilder，设置服务端口，经过forPort(port)方法返回NettyServerBuilder对象，并绑定指定端口（8000）
         FateServerBuilder serverBuilder = (FateServerBuilder) ServerBuilder.forPort(MetaInfo.PROPERTY_PORT);
         serverBuilder.keepAliveTime(100, TimeUnit.MILLISECONDS);
         serverBuilder.executor(executor);
+        //为 ServerBuilder 添加方法和拦截器（拦截器：主要完成请求参数的解析、将页面表单参数赋给值栈中相应属性、执行功能检验、程序异常调试等工作）
+        //ServerInterceptor：服务端拦截器，在方法调用之前会被调用
+        //绑定服务，将指定的服务实现类添加到方法注册器中（xxx.class）
         serverBuilder.addService(ServerInterceptors.intercept(guestInferenceService, new ServiceExceptionHandler(), new ServiceOverloadProtectionHandle()), GuestInferenceService.class);
         serverBuilder.addService(ServerInterceptors.intercept(modelService, new ServiceExceptionHandler(), new ServiceOverloadProtectionHandle()), ModelService.class);
         serverBuilder.addService(ServerInterceptors.intercept(hostInferenceService, new ServiceExceptionHandler(), new ServiceOverloadProtectionHandle()), HostInferenceService.class);
         serverBuilder.addService(ServerInterceptors.intercept(commonService, new ServiceExceptionHandler(), new ServiceOverloadProtectionHandle()), CommonService.class);
+        //构建server
         server = serverBuilder.build();
+        //创建对象，开始启动流程
         server.start();
-        boolean useRegister = MetaInfo.PROPERTY_USE_REGISTER;
+        boolean useRegister = MetaInfo.PROPERTY_USE_REGISTER;   //使用注册中心，开启后会将serving-server中的接口注册至zookeeper
         if (useRegister) {
             logger.info("serving-server is using register center");
             zookeeperRegistry.subProject(Dict.PROPERTY_PROXY_ADDRESS);

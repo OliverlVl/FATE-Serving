@@ -51,6 +51,7 @@ public class ModelServiceProvider extends AbstractServingServiceProvider {
     @Autowired
     FlowCounterManager flowCounterManager;
 
+    //fate-flow把模型推送到server
     @FateServiceMethod(name = "MODEL_LOAD")
     public Object load(Context context, InboundPackage data) {
         ModelServiceProto.PublishRequest publishRequest = (ModelServiceProto.PublishRequest) data.getBody();
@@ -58,6 +59,7 @@ public class ModelServiceProvider extends AbstractServingServiceProvider {
         return returnResult;
     }
 
+    //绑定模型，将模型绑定到模型服务中
     @FateServiceMethod(name = "MODEL_PUBLISH_ONLINE")
     public Object bind(Context context, InboundPackage data) {
         ModelServiceProto.PublishRequest req = (ModelServiceProto.PublishRequest) data.getBody();
@@ -65,6 +67,7 @@ public class ModelServiceProvider extends AbstractServingServiceProvider {
         return returnResult;
     }
 
+    //模型查询：展示实例（party）从fateflow载入成功的模型，仅显示单方模型，数据使用方会显示绑定的服务ID
     @FateServiceMethod(name = "QUERY_MODEL")
     public ModelServiceProto.QueryModelResponse queryModel(Context context, InboundPackage data) {
         ModelServiceProto.QueryModelRequest req = (ModelServiceProto.QueryModelRequest) data.getBody();
@@ -77,6 +80,7 @@ public class ModelServiceProvider extends AbstractServingServiceProvider {
                     continue;
                 }
 
+                //模型对应的角色和节点ID
                 List<Map> rolePartyMapList = model.getRolePartyMapList();
                 if (rolePartyMapList == null) {
                     rolePartyMapList = new ArrayList<>();
@@ -104,7 +108,7 @@ public class ModelServiceProvider extends AbstractServingServiceProvider {
                 modelExBuilder.setTableName(model.getTableName());
                 modelExBuilder.setNamespace(model.getNamespace());
                 if (model.getServiceIds() != null) {
-                    modelExBuilder.addAllServiceIds(model.getServiceIds());
+                    modelExBuilder.addAllServiceIds(model.getServiceIds()); //服务ID
                 }
                 modelExBuilder.setContent(JsonUtil.object2Json(model));
                 builder.addModelInfos(modelExBuilder.build());

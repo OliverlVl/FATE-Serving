@@ -61,6 +61,7 @@ public class HostModelInterceptor implements Interceptor {
         }
         servingServerContext.setModel(model);
 
+        //？？
         int times = 1;
         if (context.getServiceName().equalsIgnoreCase(Dict.SERVICENAME_BATCH_INFERENCE)) {
             BatchHostFederatedParams batchHostFederatedParams = (BatchHostFederatedParams) inboundPackage.getBody();

@@ -52,31 +52,32 @@ import java.util.stream.Collectors;
 public class ModelManager implements InitializingBean {
 
     @Autowired(required = false)
-    ZookeeperRegistry zookeeperRegistry;
+    ZookeeperRegistry zookeeperRegistry;    //server中的接口将被注册至zookeeper
     @Autowired
     ModelLoaderFactory modelLoaderFactory;
     File serviceIdFile;
     File namespaceFile;
     // old version cache file
-    File publishLoadStoreFile;
-    File publishOnlineStoreFile;
+    File publishLoadStoreFile;  //已加载的模型？
+    File publishOnlineStoreFile;    //已绑定的模型？
     Logger logger = LoggerFactory.getLogger(this.getClass());
     ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(), new NamedThreadFactory("ModelService", true));
     private ConcurrentMap<String, String> serviceIdNamespaceMap = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, Model> namespaceMap = new ConcurrentHashMap<String, Model>();
+    private ConcurrentMap<String, Model> namespaceMap = new ConcurrentHashMap<String, Model>(); //
     // (guest) name + namespace -> (host) model
     private ConcurrentMap<String, Model> partnerModelMap = new ConcurrentHashMap<String, Model>();
 
     private static String[] URL_FILTER_CHARACTER = {"?", ":", "/", "&"};
 
+    //模型解绑：可以对模型绑定的服务ID进行解绑，并注销对应服务注册的服务接口
     public synchronized ModelServiceProto.UnbindResponse unbind(Context context, ModelServiceProto.UnbindRequest req) {
         ModelServiceProto.UnbindResponse.Builder resultBuilder = ModelServiceProto.UnbindResponse.newBuilder();
-        List<String> serviceIds = req.getServiceIdsList();
+        List<String> serviceIds = req.getServiceIdsList();  //要解绑的服务ID
         Preconditions.checkArgument(serviceIds != null && serviceIds.size() != 0, "param service id is blank");
         logger.info("try to unbind model, service id : {}", serviceIds);
         String modelKey = this.getNameSpaceKey(req.getTableName(), req.getNamespace());
-        if (!this.namespaceMap.containsKey(modelKey)) {
+        if (!this.namespaceMap.containsKey(modelKey)) { //model在server的地址？
             logger.error("not found model info table name {} namespace {}, please check if the model is already loaded.", req.getTableName(), req.getNamespace());
             throw new ModelNullException(" found model info, please check if the model is already loaded.");
         }
@@ -89,6 +90,7 @@ public class ModelManager implements InitializingBean {
                 throw new ModelNullException("unbind request info is error");
             }
         });
+        //注销接口
         if (zookeeperRegistry != null) {
             Set<URL> registered = zookeeperRegistry.getRegistered();
             List<URL> unRegisterUrls = Lists.newArrayList();
@@ -102,6 +104,7 @@ public class ModelManager implements InitializingBean {
             }
             logger.info("Unregister urls: {}", unRegisterUrls);
         }
+        //解绑服务ID
         serviceIds.forEach(serviceId -> {
             this.serviceIdNamespaceMap.remove(serviceId);
         });
@@ -128,6 +131,7 @@ public class ModelManager implements InitializingBean {
         logger.info("Store model cache success");
     }
 
+    //从文件中读取模型
     private List<RequestWapper> doLoadOldVersionCache(File file) {
         Map<String, RequestWapper> properties = new HashMap<>(8);
         if (file != null && file.exists()) {
@@ -225,6 +229,7 @@ public class ModelManager implements InitializingBean {
         }
     }
 
+    //恢复模型
     public synchronized void restore(Context context) {
         // compatible 1.2.x
         restoreOldVersionCache();
@@ -583,6 +588,7 @@ public class ModelManager implements InitializingBean {
         return resultBuilder.build();
     }
 
+    //保存模型缓存文件
     public void doSaveCache(Map data, File file, long version) {
         if (file == null) {
             logger.error("save cache file error , file is null");
@@ -605,7 +611,7 @@ public class ModelManager implements InitializingBean {
                         file.createNewFile();
                     }
                     try (FileOutputStream outputFile = new FileOutputStream(file)) {
-                        byte[] serialize = SerializationUtils.serialize(data);
+                        byte[] serialize = SerializationUtils.serialize(data);  //序列化
                         outputFile.write(serialize);
                     }
                 } finally {
@@ -618,12 +624,13 @@ public class ModelManager implements InitializingBean {
         }
     }
 
+    //从缓存中载入模型
     private void doLoadCache(Map data, File file) {
         if (file != null && file.exists()) {
             try (InputStream in = new FileInputStream(file)) {
                 Long length = file.length();
                 byte[] bytes = new byte[length.intValue()];
-                int readCount = in.read(bytes);
+                int readCount = in.read(bytes); //从输入流中读取字节到bytes中
                 if (readCount > 0) {
                     data.clear();
                     ConcurrentMap deserialize = (ConcurrentMap) SerializationUtils.deserialize(bytes);

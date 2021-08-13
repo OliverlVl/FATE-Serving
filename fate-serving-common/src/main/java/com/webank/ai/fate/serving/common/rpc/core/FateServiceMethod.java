@@ -18,9 +18,9 @@ package com.webank.ai.fate.serving.common.rpc.core;
 
 import java.lang.annotation.*;
 
-@Target({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})   //说明该注解是一个方法
+@Retention(RetentionPolicy.RUNTIME) //在运行时有效（即运行时保留，可以通过此级别获取注解信息）
 @Inherited
-public @interface FateServiceMethod {
+public @interface FateServiceMethod {   //注解类
     String[] name();
 }

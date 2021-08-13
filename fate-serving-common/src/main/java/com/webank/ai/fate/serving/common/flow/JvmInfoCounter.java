@@ -44,7 +44,7 @@ public class JvmInfoCounter {
         return result;
     }
 
-    public static synchronized void start() {
+    public static synchronized void start() {   //synchronized给所有实例加锁
         if (!started) {
             executorService.scheduleAtFixedRate(new Runnable() {
                 @Override

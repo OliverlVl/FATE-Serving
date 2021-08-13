@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+//Adaptor：host方的特征获取接口
 @Service
 public class HostBatchFeatureAdaptorInterceptor extends AbstractInterceptor<BatchInferenceRequest, BatchInferenceResult> implements InitializingBean {
 
@@ -41,6 +42,7 @@ public class HostBatchFeatureAdaptorInterceptor extends AbstractInterceptor<Batc
 
     BatchFeatureDataAdaptor batchFeatureDataAdaptor = null;
 
+    //预处理，获取特征
     @Override
     public void doPreProcess(Context context, InboundPackage<BatchInferenceRequest> inboundPackage, OutboundPackage<BatchInferenceResult> outboundPackage) throws Exception {
         long begin = System.currentTimeMillis();
@@ -48,6 +50,7 @@ public class HostBatchFeatureAdaptorInterceptor extends AbstractInterceptor<Batc
             throw new FeatureDataAdaptorException("adaptor not found");
         }
         BatchInferenceRequest batchInferenceRequest = inboundPackage.getBody();
+        //host serving-server将通过adaptor接口从host特征存储相关系统中获取特征
         BatchHostFeatureAdaptorResult batchHostFeatureAdaptorResult = batchFeatureDataAdaptor.getFeatures(context, inboundPackage.getBody().getBatchDataList());
         if (batchHostFeatureAdaptorResult == null) {
             throw new HostGetFeatureErrorException("adaptor return null");
@@ -67,6 +70,7 @@ public class HostBatchFeatureAdaptorInterceptor extends AbstractInterceptor<Batc
         logger.info("batch adaptor cost {} ", end - begin);
     }
 
+    //加载批量特征处理器
     @Override
     public void afterPropertiesSet() throws Exception {
         String adaptorClass = MetaInfo.PROPERTY_FEATURE_BATCH_ADAPTOR;

@@ -36,9 +36,9 @@ import java.io.*;
 import java.util.Properties;
 
 @SpringBootApplication
-@ConfigurationProperties
-@PropertySource(value = "classpath:serving-server.properties", ignoreResourceNotFound = false)
-@EnableScheduling
+@ConfigurationProperties  //相关属性与配置文件里设置的属性进行绑定
+@PropertySource(value = "classpath:serving-server.properties", ignoreResourceNotFound = false)  //加载配置文件，文件不存在则报错
+@EnableScheduling   //开启定时任务
 public class Bootstrap {
     static Logger logger = LoggerFactory.getLogger(Bootstrap.class);
     private static ApplicationContext applicationContext;
@@ -48,7 +48,7 @@ public class Bootstrap {
             parseConfig();
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.start(args);
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> bootstrap.stop()));
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> bootstrap.stop()));   //事件监听，捕获系统退出消息到来
         } catch (Exception ex) {
             logger.error("serving-server start error", ex);
             System.exit(1);
@@ -119,13 +119,13 @@ public class Bootstrap {
     public void start(String[] args) {
         HttpClientPool.initPool();
         SpringApplication springApplication = new SpringApplication(Bootstrap.class);
-        applicationContext = springApplication.run(args);
+        applicationContext = springApplication.run(args);   //启动
         JvmInfoCounter.start();
     }
 
     public void stop() {
         logger.info("try to shutdown server ...");
-        AbstractServiceAdaptor.isOpen = false;
+        AbstractServiceAdaptor.isOpen = false;  //服务适配器
 
         int retryCount = 0;
         while (AbstractServiceAdaptor.requestInHandle.get() > 0 && retryCount < 30) {

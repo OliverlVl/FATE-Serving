@@ -60,7 +60,7 @@ public class HostSingleInferenceProvider extends AbstractServingServiceProvider<
         InferenceRequest params = data.getBody();
         Model model = ((ServingServerContext) context).getModel();
         ModelProcessor modelProcessor = model.getModelProcessor();
-        ReturnResult result = modelProcessor.hostInference(context, params);
+        ReturnResult result = modelProcessor.hostInference(context, params);    //执行推理逻辑
         return result;
 
     }

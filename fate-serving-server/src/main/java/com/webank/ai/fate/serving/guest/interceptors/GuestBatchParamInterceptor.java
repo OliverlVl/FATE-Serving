@@ -43,6 +43,7 @@ public class GuestBatchParamInterceptor implements Interceptor {
         try {
             batchInferenceRequest = JsonUtil.json2Object(message.getBody().toByteArray(), BatchInferenceRequest.class);
             inboundPackage.setBody(batchInferenceRequest);
+            //FeatureData和SendToRemoteFeatureData包含在batchDataList中
             Preconditions.checkArgument(batchInferenceRequest != null, "request message parse error");
             Preconditions.checkArgument(StringUtils.isNotBlank(batchInferenceRequest.getServiceId()), "no service id");
             if (batchInferenceRequest.getCaseid() == null || batchInferenceRequest.getCaseid().length() == 0) {
