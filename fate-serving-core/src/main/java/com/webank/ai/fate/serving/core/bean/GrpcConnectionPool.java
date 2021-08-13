@@ -40,6 +40,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+// gRPC 连接 池
 public class GrpcConnectionPool {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcConnectionPool.class);
@@ -48,13 +49,28 @@ public class GrpcConnectionPool {
 
     public ConcurrentHashMap<String, ChannelResource> poolMap = new ConcurrentHashMap<String, ChannelResource>();
     Random r = new Random();
+    // 可用计算资源，cpu核心线程数
     private int maxTotalPerAddress = Runtime.getRuntime().availableProcessors();
     private long defaultLoadFactor = 10;
+    /**
+     * 计时器线程池
+     * 1个线程可以重复使用，不创建新的线程
+     */
     private ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
 
     private GrpcConnectionPool() {
 
-            scheduledExecutorService.scheduleAtFixedRate(
+
+        /**
+         * scheduleAtFixedRate:以固定的频率来执行某个任务
+         * 用处：定时任务
+         * 四个参数
+         *	1:任务----run()方法
+         *	2:第一个任务多久执行---1000：1000毫秒后执行
+         *	3:每隔多长时间执行这个任务---10000--每隔10000毫秒，任务重复执行
+         *	4:时间单位是多少--TimeUnit.MILLISECONDS--指定时间单位毫秒
+         */
+        scheduledExecutorService.scheduleAtFixedRate(
                     new Runnable() {
                         @Override
                         public void run() {
@@ -64,13 +80,16 @@ public class GrpcConnectionPool {
                                     //logger.info("grpc pool {} channel size {} req count {}", k, v.getChannels().size(), v.getRequestCount().get() - v.getPreCheckCount());
 
                                     if (needAddChannel(v)) {
+                                        // 添加channel
                                         String[] ipPort = k.split(":");
                                         String ip = ipPort[0];
                                         int port = Integer.parseInt(ipPort[1]);
+                                        // 创建managed channel
                                         ManagedChannel managedChannel = createManagedChannel(ip, port, v.getNettyServerInfo());
                                         v.getChannels().add(managedChannel);
                                     }
                                     v.getChannels().forEach(e -> {
+                                        // 检查状态
                                         try {
                                             ConnectivityState state = e.getState(true);
                                             if (state.equals(ConnectivityState.TRANSIENT_FAILURE) || state.equals(ConnectivityState.SHUTDOWN)) {
@@ -99,10 +118,20 @@ public class GrpcConnectionPool {
         return pool;
     }
 
+    /**
+     * 通道故障报错
+     * @param k
+     * @param status
+     */
     private void fireChannelError(String k, ConnectivityState status) {
         logger.error("grpc channel {} status is {}", k, status);
     }
 
+    /**
+     * 判断是否需要添加channel
+     * @param channelResource
+     * @return
+     */
     private boolean needAddChannel(ChannelResource channelResource) {
         long requestCount = channelResource.getRequestCount().longValue();
         long preCount = channelResource.getPreCheckCount();
@@ -110,10 +139,12 @@ public class GrpcConnectionPool {
 
         int channelSize = channelResource.getChannels().size();
         long now = System.currentTimeMillis();
+        // 请求数量-之前的请求数量  除以 通道大小*时间 = 每个通道每秒需要多处理的请求数
         long loadFactor = ((requestCount - preCount) * 1000) / (channelSize * (now - latestTimestamp));
         channelResource.setLatestChecktimestamp(now);
         channelResource.setPreCheckCount(requestCount);
         if (channelSize > maxTotalPerAddress) {
+            // channel大小>可用计算资源
             return false;
         }
         if (latestTimestamp == 0) {
@@ -131,6 +162,11 @@ public class GrpcConnectionPool {
         }
     }
 
+    /**
+     * 获取managed channel
+     * @param routerInfo
+     * @return
+     */
     public  ManagedChannel getManagedChannel(RouterInfo  routerInfo){
         NettyServerInfo nettyServerInfo = null;
         if (routerInfo.isUseSSL()) {
@@ -168,28 +204,49 @@ public class GrpcConnectionPool {
         return this.getManagedChannel(key);
     }
 
+
+    /**
+     * 随机获取 managed channel
+     * @param channelResource
+     * @return
+     */
     private ManagedChannel getRandomManagedChannel(ChannelResource channelResource) {
         List<ManagedChannel> list = channelResource.getChannels();
         Preconditions.checkArgument(list != null && list.size() > 0);
+        // 生成一个随机int值，范围[0,list.size())
         int index = r.nextInt(list.size());
         ManagedChannel result = list.get(index);
+        // 请求数加1并返回值
         channelResource.getRequestCount().addAndGet(1);
         return result;
 
     }
 
+    /**
+     * 创建key的channel资源
+     * @param key
+     * @param nettyServerInfo
+     * @return
+     */
     private synchronized ManagedChannel createInner(String key, NettyServerInfo nettyServerInfo) {
+        // 获取key的channel资源
         ChannelResource channelResource = poolMap.get(key);
         if (channelResource == null) {
+            // 资源为null
             String[] ipPort = key.split(":");
             String ip = ipPort[0];
             int port = Integer.parseInt(ipPort[1]);
+            // 创建通道
             ManagedChannel managedChannel = createManagedChannel(ip, port, nettyServerInfo);
             List<ManagedChannel> managedChannelList = new ArrayList<ManagedChannel>();
             managedChannelList.add(managedChannel);
+            // 新建channel资源
             channelResource = new ChannelResource(key, nettyServerInfo);
+            // 讲managedChannel列表 放入channel资源中
             channelResource.setChannels(managedChannelList);
+            // 请求数加1并返回值
             channelResource.getRequestCount().addAndGet(1);
+            // 将key 的 channel资源放入poolMap中
             poolMap.put(key, channelResource);
             return managedChannel;
         } else {
@@ -198,6 +255,13 @@ public class GrpcConnectionPool {
 
     }
 
+    /**
+     * 创建gRPC channel
+     * @param ip
+     * @param port
+     * @param nettyServerInfo
+     * @return
+     */
     public synchronized ManagedChannel createManagedChannel(String ip, int port, NettyServerInfo nettyServerInfo) {
         try {
             logger.info("create channel ip {} port {} server info {}",ip,port,nettyServerInfo);
@@ -240,10 +304,16 @@ public class GrpcConnectionPool {
         return null;
     }
 
+    /**
+     * channel 资源池
+     */
     class ChannelResource {
-
+        // ip + port
         String address;
+        // channel 列表
         List<ManagedChannel> channels = Lists.newArrayList();
+        // 请求数量
+        // atomiclong 可以理解是加了synchronized的long
         AtomicLong requestCount = new AtomicLong(0);
         long latestChecktimestamp = 0;
         long preCheckCount = 0;

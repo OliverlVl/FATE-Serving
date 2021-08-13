@@ -17,7 +17,7 @@
 package com.webank.ai.fate.serving.core.exceptions;
 
 import com.webank.ai.fate.serving.core.constant.StatusCode;
-
+// 远程rpc异常
 public class RemoteRpcException extends BaseException {
 
     public RemoteRpcException(int retCode, String message) {

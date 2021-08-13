@@ -46,6 +46,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * 统计/监控
+ */
 @RequestMapping("/api")
 @RestController
 public class MonitorController {
@@ -55,14 +58,25 @@ public class MonitorController {
     @Autowired
     ComponentService componentService;
 
+    /**
+     * 查询Jvm 监控信息
+     * @param host
+     * @param port
+     * @return
+     */
     @GetMapping("/monitor/queryJvm")
     public ReturnResult queryJvmData(String host, int port) {
+        // 创建stub
         CommonServiceGrpc.CommonServiceBlockingStub blockingStub = getMonitorServiceBlockStub(host, port);
+        // gRPC 设置超时时间
         blockingStub = blockingStub.withDeadlineAfter(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
+        // 构造请求对象
         CommonServiceProto.QueryJvmInfoRequest.Builder builder = CommonServiceProto.QueryJvmInfoRequest.newBuilder();
+        // 获取jvm 响应数据
         CommonServiceProto.CommonResponse commonResponse = blockingStub.queryJvmInfo(builder.build());
         List<JvmInfo> resultList = Lists.newArrayList();
         if (commonResponse.getData() != null && !commonResponse.getData().toStringUtf8().equals("null")) {
+            // json 转 List
             List<JvmInfo> resultData = JsonUtil.json2List(commonResponse.getData().toStringUtf8(), new TypeReference<List<JvmInfo>>() {
             });
 
@@ -70,6 +84,7 @@ public class MonitorController {
                 resultList = resultData;
             }
 
+            // 排序 在sorted方法中，o1是最后面的元素，o2是倒数第二个元素，以此类推，流是处理元素是从后面开始取值。
             resultList = resultList.stream()
                     .sorted(((o1, o2) -> o1.getTimestamp() == o2.getTimestamp() ? 0 : ((o1.getTimestamp() - o2.getTimestamp()) > 0 ? 1 : -1)))
                     .collect(Collectors.toList());
@@ -80,28 +95,43 @@ public class MonitorController {
         return ReturnResult.build(StatusCode.SUCCESS, Dict.SUCCESS, map);
     }
 
+    /**
+     * 查询监控数据
+     * @param host
+     * @param port
+     * @param source
+     * @return
+     */
     @GetMapping("/monitor/query")
     public ReturnResult queryMonitorData(String host, int port, String source) {
+        // 创建stub
         CommonServiceGrpc.CommonServiceBlockingStub blockingStub = getMonitorServiceBlockStub(host, port);
+        // gRPC 设置超时时间
         blockingStub = blockingStub.withDeadlineAfter(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
+        // 构造请求对象
         CommonServiceProto.QueryMetricRequest.Builder builder = CommonServiceProto.QueryMetricRequest.newBuilder();
-
+        // 时间
         long now = System.currentTimeMillis();
         builder.setBeginMs(now - 15000);
         builder.setEndMs(now);
+
         if (StringUtils.isNotBlank(source)) {
             builder.setSource(source);
         }
+        // 类型：interface
         builder.setType(CommonServiceProto.MetricType.INTERFACE);
+        // 获取响应数据
         CommonServiceProto.CommonResponse commonResponse = blockingStub.queryMetrics(builder.build());
         List<MetricNode> metricNodes = Lists.newArrayList();
         if (commonResponse.getData() != null && !commonResponse.getData().toStringUtf8().equals("null")) {
+            // json 转 List
             List<MetricNode> resultData = JsonUtil.json2List(commonResponse.getData().toStringUtf8(), new TypeReference<List<MetricNode>>() {
             });
             if (resultData != null) {
                 metricNodes = resultData;
             }
         }
+        // 排序
         metricNodes = metricNodes.stream()
                 .sorted(((o1, o2) -> o1.getTimestamp() == o2.getTimestamp() ? 0 : ((o1.getTimestamp() - o2.getTimestamp()) > 0 ? 1 : -1)))
                 .collect(Collectors.toList());
@@ -121,28 +151,43 @@ public class MonitorController {
     }
 
 
+    /**
+     * 查询模型监控数据
+     * @param host
+     * @param port
+     * @param source
+     * @return
+     */
     @GetMapping("/monitor/queryModel")
     public ReturnResult queryModelMonitorData(String host, int port, String source) {
         Preconditions.checkArgument(StringUtils.isNotBlank(source), "parameter source is blank");
+        // 创建stub
         CommonServiceGrpc.CommonServiceBlockingStub blockingStub = getMonitorServiceBlockStub(host, port);
+        // gRPC 设置超时时间
         blockingStub = blockingStub.withDeadlineAfter(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
+        // 构造请求对象
         CommonServiceProto.QueryMetricRequest.Builder builder = CommonServiceProto.QueryMetricRequest.newBuilder();
+        // 时间
         long now = System.currentTimeMillis();
         builder.setBeginMs(now - 15000);
         builder.setEndMs(now);
         if (StringUtils.isNotBlank(source)) {
             builder.setSource(source);
         }
+        // 类型：model
         builder.setType(CommonServiceProto.MetricType.MODEL);
+        // 获取响应数据
         CommonServiceProto.CommonResponse commonResponse = blockingStub.queryMetrics(builder.build());
         List<MetricNode> metricNodes = Lists.newArrayList();
         if (commonResponse.getData() != null && !commonResponse.getData().toStringUtf8().equals("null")) {
+            // json 转 List
             List<MetricNode> resultData = JsonUtil.json2List(commonResponse.getData().toStringUtf8(), new TypeReference<List<MetricNode>>() {
             });
             if (resultData != null) {
                 metricNodes = resultData;
             }
         }
+        // 排序
         metricNodes = metricNodes.stream()
                 .sorted(((o1, o2) -> o1.getTimestamp() == o2.getTimestamp() ? 0 : ((o1.getTimestamp() - o2.getTimestamp()) > 0 ? 1 : -1)))
                 .collect(Collectors.toList());
@@ -162,19 +207,29 @@ public class MonitorController {
         return ReturnResult.build(StatusCode.SUCCESS, Dict.SUCCESS, dataMap);
     }
 
+    /**
+     * 获取Stub存根
+     * @param host
+     * @param port
+     * @return
+     */
     private CommonServiceGrpc.CommonServiceBlockingStub getMonitorServiceBlockStub(String host, int port) {
         Preconditions.checkArgument(StringUtils.isNotBlank(host), "parameter host is blank");
         Preconditions.checkArgument(port != 0, "parameter port was wrong");
 
+        // 判断地址是否有效
         if (!NetUtils.isValidAddress(host + ":" + port)) {
             throw new SysException("invalid address");
         }
 
+        // 判断是否允许访问
         if (!componentService.isAllowAccess(host, port)) {
             throw new RemoteRpcException("no allow access, target: " + host + ":" + port);
         }
 
+        // 获取一个 gRPC 频道
         ManagedChannel managedChannel = grpcConnectionPool.getManagedChannel(host, port);
+        // 创建存根
         CommonServiceGrpc.CommonServiceBlockingStub blockingStub = CommonServiceGrpc.newBlockingStub(managedChannel);
         return blockingStub;
     }

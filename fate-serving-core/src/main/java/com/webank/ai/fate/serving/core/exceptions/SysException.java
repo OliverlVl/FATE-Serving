@@ -18,6 +18,7 @@ package com.webank.ai.fate.serving.core.exceptions;
 
 import com.webank.ai.fate.serving.core.constant.StatusCode;
 
+// 系统异常
 public class SysException extends BaseException {
 
     public SysException(int retCode, String message) {

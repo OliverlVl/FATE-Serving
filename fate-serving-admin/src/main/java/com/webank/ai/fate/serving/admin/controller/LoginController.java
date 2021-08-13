@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @Description User management
+ * @Description User management 用户登入和退出
  * @Date: 2020/3/25 11:13
  * @Author: v_dylanxu
  */
@@ -56,24 +56,37 @@ public class LoginController {
     @Autowired
     private Cache cache;
 
+    /**
+     * @@Description 用户登入：默认用户：admin，默认密码：admin，用户可在application.properties中修改预设用户
+     * serving-admin仅实现简单的用户登录，用户可业务需求，自行实现登录逻辑，或接入第三方平台
+     * @param requestParams
+     * @return
+     */
     @PostMapping("/admin/login")
     public ReturnResult login(@RequestBody RequestParamWrapper requestParams) {
         String username = requestParams.getUsername();
         String password = requestParams.getPassword();
 
+        // Preconditions类:可以简洁的完成参数检验，在进行业务逻辑代码前进行前置判断。
+        // 并且避免了冗长的if语句。guava将所有检验的API都放置于Preconditions类中。
         Preconditions.checkArgument(StringUtils.isNotBlank(username), "parameter username is blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(password), "parameter password is blank");
 
         ReturnResult result = new ReturnResult();
         if (username.equals(this.username) && password.equals(this.password)) {
+            // 将数组转化成List集合,用“-”拼接成字符串
             String userInfo = StringUtils.join(Arrays.asList(username, password), "_");
+            // MD5加密令牌
             String token = EncryptUtils.encrypt(Dict.USER_CACHE_KEY_PREFIX + userInfo, EncryptMethod.MD5);
+            // token，用户信息，缓存过期时间添加到cache中
+            // token 作为key ，userInfo作为value
             cache.put(token, userInfo, MetaInfo.PROPERTY_CACHE_TYPE.equalsIgnoreCase("local") ? MetaInfo.PROPERTY_LOCAL_CACHE_EXPIRE : MetaInfo.PROPERTY_REDIS_EXPIRE);
             logger.info("user {} login success.", username);
 
             Map data = new HashMap<>();
             data.put("timestamp", System.currentTimeMillis());
             data.put(Dict.SESSION_TOKEN, token);
+            //返回code
             result.setRetcode(StatusCode.SUCCESS);
             result.setData(data);
         } else {
@@ -84,13 +97,22 @@ public class LoginController {
         return result;
     }
 
+    /**
+     * @Description 用户退出
+     * @param request
+     * @return
+     */
     @PostMapping("/admin/logout")
     public ReturnResult logout(HttpServletRequest request) {
         ReturnResult result = new ReturnResult();
 
+        // 获取会话令牌
         String sessionToken = request.getHeader(Dict.SESSION_TOKEN);
+        // 根据key：sessionToken 获取 value：userInfo
         String userInfo = (String) cache.get(sessionToken);
+        // 判断userInfo是否为空
         if (StringUtils.isNotBlank(userInfo)) {
+            // sessionToken存在，删除token
             cache.delete(sessionToken);
             result.setRetcode(StatusCode.SUCCESS);
         } else {

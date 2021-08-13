@@ -33,8 +33,8 @@ import java.util.*;
 @Service
 public class ComponentService {
 
-    private final static String PATH_SEPARATOR = "/";
-    private final static String DEFAULT_COMPONENT_ROOT = "FATE-COMPONENTS";
+    private final static String PATH_SEPARATOR = "/"; // 路径分隔符
+    private final static String DEFAULT_COMPONENT_ROOT = "FATE-COMPONENTS"; // 默认组件根
     Logger logger = LoggerFactory.getLogger(ComponentService.class);
     @Autowired
     ZookeeperRegistry zookeeperRegistry;
@@ -48,6 +48,10 @@ public class ComponentService {
         return cachedNodeData;
     }
 
+    /**
+     * 获取可以访问的list
+     * @return
+     */
     public Set<String> getWhitelist() {
         if (projectNodes == null || projectNodes.size() == 0) {
             return null;
@@ -74,6 +78,12 @@ public class ComponentService {
         return project.get();
     }
 
+    /**
+     *  判断是否允许访问
+     * @param host
+     * @param port
+     * @return
+     */
     public boolean isAllowAccess(String host, int port) {
         Set<String> whitelist = getWhitelist();
         if (whitelist != null && whitelist.contains(host + ":" + port)) {
@@ -82,6 +92,9 @@ public class ComponentService {
         return false;
     }
 
+    /**
+     * 定时任务：每5秒执行一次
+     */
     @Scheduled(cron = "0/5 * * * * ?")
     public void schedulePullComponent() {
         try {

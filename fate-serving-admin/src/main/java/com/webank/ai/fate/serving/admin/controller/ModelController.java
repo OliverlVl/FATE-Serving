@@ -60,6 +60,16 @@ public class ModelController {
     @Autowired
     private ComponentService componentService;
 
+    /**
+     * 模型查询
+     * @param host host ip地址
+     * @param port 端口号
+     * @param serviceId 服务ID
+     * @param page 页数
+     * @param pageSize 每页大小
+     * @return
+     * @throws Exception
+     */
     @GetMapping("/model/query")
     public ReturnResult queryModel(String host, int port, String serviceId, Integer page, Integer pageSize) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(host), "parameter host is blank");
@@ -73,12 +83,15 @@ public class ModelController {
             pageSize = 10;
         }
 
+        // 调试时候使用debug输出信息
         if (logger.isDebugEnabled()) {
             logger.debug("query model, host: {}, port: {}, serviceId: {}", host, port, serviceId);
         }
 
+        // 创建阻塞式存根 Stub
         ModelServiceGrpc.ModelServiceBlockingStub blockingStub = getModelServiceBlockingStub(host, port);
 
+        // 构造请求对象
         ModelServiceProto.QueryModelRequest.Builder queryModelRequestBuilder = ModelServiceProto.QueryModelRequest.newBuilder();
 
         if (StringUtils.isNotBlank(serviceId)) {
@@ -92,6 +105,7 @@ public class ModelController {
             queryModelRequestBuilder.setQueryType(0);
         }
 
+        // 查询模型响应
         ModelServiceProto.QueryModelResponse response = blockingStub.queryModel(queryModelRequestBuilder.build());
 
         if (logger.isDebugEnabled()) {
@@ -100,10 +114,13 @@ public class ModelController {
 
         Map data = Maps.newHashMap();
         List rows = Lists.newArrayList();
+        // 模型列表
         List<ModelServiceProto.ModelInfoEx> modelInfosList = response.getModelInfosList();
         int totalSize = 0;
         if (modelInfosList != null) {
+            // 总个数
             totalSize = modelInfosList.size();
+            // 排序
             modelInfosList = modelInfosList.stream().sorted(Comparator.comparingInt(ModelServiceProto.ModelInfoEx::getIndex)).collect(Collectors.toList());
 
             // Pagination
@@ -112,6 +129,7 @@ public class ModelController {
                 modelInfosList = modelInfosList.subList((page - 1) * pageSize, Math.min(page * pageSize, modelInfosList.size()));
             }
 
+            // json转成map存储
             for (ModelServiceProto.ModelInfoEx modelInfoEx : modelInfosList) {
                 rows.add(JsonUtil.json2Object(modelInfoEx.getContent(), Map.class));
             }
@@ -122,6 +140,12 @@ public class ModelController {
         return ReturnResult.build(response.getRetcode(), response.getMessage(), data);
     }
 
+    /**
+     * 模型卸载:卸载实例已载入的模型，模型卸载会同时解绑服务ID，并注销注册的服务接口
+     * @param requestParams
+     * @return
+     * @throws Exception
+     */
     @PostMapping("/model/unload")
     public Callable<ReturnResult> unload(@RequestBody RequestParamWrapper requestParams) throws Exception {
         return () -> {
@@ -139,13 +163,16 @@ public class ModelController {
                 logger.debug("unload model by tableName and namespace, host: {}, port: {}, tableName: {}, namespace: {}", host, port, tableName, namespace);
             }
 
+            // 创建 存根 stub
             ModelServiceGrpc.ModelServiceFutureStub futureStub = getModelServiceFutureStub(host, port);
 
+            // 构造请求对象
             ModelServiceProto.UnloadRequest unloadRequest = ModelServiceProto.UnloadRequest.newBuilder()
                     .setTableName(tableName)
                     .setNamespace(namespace)
                     .build();
 
+            // 获取模型卸载 响应数据
             ListenableFuture<ModelServiceProto.UnloadResponse> future = futureStub.unload(unloadRequest);
             ModelServiceProto.UnloadResponse response = future.get(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
 
@@ -160,6 +187,12 @@ public class ModelController {
         };
     }
 
+    /**
+     * 模型解绑:可以对模型绑定的服务ID进行解绑，并注销对应服务注册的服务接口
+     * @param requestParams
+     * @return
+     * @throws Exception
+     */
     @PostMapping("/model/unbind")
     public Callable<ReturnResult> unbind(@RequestBody RequestParamWrapper requestParams) throws Exception {
         return () -> {
@@ -179,14 +212,17 @@ public class ModelController {
                 logger.debug("unload model by tableName and namespace, host: {}, port: {}, tableName: {}, namespace: {}", host, port, tableName, namespace);
             }
 
+            // 创建 存根 stub
             ModelServiceGrpc.ModelServiceFutureStub futureStub = getModelServiceFutureStub(host, port);
 
+            // 构造请求对象
             ModelServiceProto.UnbindRequest unbindRequest = ModelServiceProto.UnbindRequest.newBuilder()
                     .setTableName(tableName)
                     .setNamespace(namespace)
                     .addAllServiceIds(serviceIds)
                     .build();
 
+            // 获取模型解绑 响应数据
             ListenableFuture<ModelServiceProto.UnbindResponse> future = futureStub.unbind(unbindRequest);
             ModelServiceProto.UnbindResponse response = future.get(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
 
@@ -200,37 +236,61 @@ public class ModelController {
         };
     }
 
+    /**
+     * 获取阻塞式Stub存根：
+     * 为屏蔽客户调用远程主机上的对象，必须提供某种方式来模拟本地对象,这种本地对象称为存根(stub),存根负责接收本地方法调用,并将它们委派给各自的具体实现对象。
+     * @param host
+     * @param port
+     * @return
+     * @throws Exception
+     */
     private ModelServiceGrpc.ModelServiceBlockingStub getModelServiceBlockingStub(String host, Integer port) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(host), "parameter host is blank");
         Preconditions.checkArgument(port != null && port.intValue() != 0, "parameter port was wrong");
 
+        // 判断地址是否有效
         if (!NetUtils.isValidAddress(host + ":" + port)) {
             throw new SysException("invalid address");
         }
 
+        // 判断是否允许访问
         if (!componentService.isAllowAccess(host, port)) {
             throw new RemoteRpcException("no allow access, target: " + host + ":" + port);
         }
 
+        // 获取一个 gRPC 频道
         ManagedChannel managedChannel = grpcConnectionPool.getManagedChannel(host, port);
+        // 创建存根，blockingStub为阻塞式，需要阻塞等待服务端的回应。
         ModelServiceGrpc.ModelServiceBlockingStub blockingStub = ModelServiceGrpc.newBlockingStub(managedChannel);
+        // gRPC 设置超时时间
         blockingStub = blockingStub.withDeadlineAfter(MetaInfo.PROPERTY_GRPC_TIMEOUT, TimeUnit.MILLISECONDS);
         return blockingStub;
     }
 
+    /**
+     *  获取future 存根 stub
+     * @param host
+     * @param port
+     * @return
+     * @throws Exception
+     */
     private ModelServiceGrpc.ModelServiceFutureStub getModelServiceFutureStub(String host, Integer port) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(host), "parameter host is blank");
         Preconditions.checkArgument(port != null && port.intValue() != 0, "parameter port was wrong");
 
+        // 判断地址是否有效
         if (!NetUtils.isValidAddress(host + ":" + port)) {
             throw new SysException("invalid address");
         }
 
+        // 判断是否允许访问
         if (!componentService.isAllowAccess(host, port)) {
             throw new RemoteRpcException("no allow access, target: " + host + ":" + port);
         }
 
+        // 获取一个 gRPC 频道
         ManagedChannel managedChannel = grpcConnectionPool.getManagedChannel(host, port);
+        // 创建存根
         ModelServiceGrpc.ModelServiceFutureStub futureStub = ModelServiceGrpc.newFutureStub(managedChannel);
         return futureStub;
     }

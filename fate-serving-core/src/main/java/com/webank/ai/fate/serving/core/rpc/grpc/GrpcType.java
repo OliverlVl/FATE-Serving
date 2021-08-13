@@ -22,11 +22,11 @@ package com.webank.ai.fate.serving.core.rpc.grpc;
  **/
 public enum GrpcType {
     /**
-     * INTRA_GRPC
+     * INTRA_GRPC 内部
      */
     INTRA_GRPC,
     /**
-     * INTRA_GRPC
+     * INTER_GRPC 外部
      */
     INTER_GRPC
 }

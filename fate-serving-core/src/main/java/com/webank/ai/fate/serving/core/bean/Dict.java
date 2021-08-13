@@ -218,7 +218,7 @@ public class Dict {
 
 
     public static final String MD5_SALT = "$1$ML";
-    public static final String USER_CACHE_KEY_PREFIX = "admin_user_";
+    public static final String USER_CACHE_KEY_PREFIX = "admin_user_"; // 用户缓存密钥前缀
 
     public static final String CASE_ID = "caseid";
     public static final String CODE = "code";
@@ -231,7 +231,7 @@ public class Dict {
     public static final String ROLE = "role";
     public static final String PART_ID = "partId";
     public static final String FEATURE_DATA = "featureData";
-    public static final String SESSION_TOKEN = "sessionToken";
+    public static final String SESSION_TOKEN = "sessionToken"; // 会话令牌
 
     public static final String DEFAULT_VERSION = "1.0";
     public static final String SELF_PROJECT_NAME = "proxy";

@@ -22,7 +22,7 @@ import com.webank.ai.fate.serving.core.adaptor.AdaptorDescriptor;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-
+// 元信息
 public class MetaInfo {
     public static final long CURRENT_VERSION = 204;
     public static List<AdaptorDescriptor.ParamDescriptor> inferenceParamDescriptorList;
@@ -49,11 +49,11 @@ public class MetaInfo {
     public static Integer PROPERTY_REDIS_TIMEOUT;
     public static Integer PROPERTY_REDIS_MAX_TOTAL;
     public static Integer PROPERTY_REDIS_MAX_IDLE;
-    public static Integer PROPERTY_REDIS_EXPIRE;
+    public static Integer PROPERTY_REDIS_EXPIRE; // 属性_redis缓存_过期时间
     public static String PROPERTY_REDIS_CLUSTER_NODES;
-    public static String PROPERTY_CACHE_TYPE;
+    public static String PROPERTY_CACHE_TYPE; //属性_缓存_类型
     public static Integer PROPERTY_LOCAL_CACHE_MAXSIZE;
-    public static Integer PROPERTY_LOCAL_CACHE_EXPIRE;
+    public static Integer PROPERTY_LOCAL_CACHE_EXPIRE;// 属性_本地_缓存_过期时间
     public static Integer PROPERTY_LOCAL_CACHE_INTERVAL;
     public static Integer PROPERTY_BATCH_SPLIT_SIZE;
     public static Integer PROPERTY_LR_SPLIT_SIZE;
@@ -80,7 +80,7 @@ public class MetaInfo {
     public static String PROPERTY_MODEL_CACHE_PATH;
     public static String PROPERTY_FATEFLOW_LOAD_URL;
     public static String PROPERTY_FATEFLOW_BIND_URL;
-    public static Integer PROPERTY_GRPC_TIMEOUT;
+    public static Integer PROPERTY_GRPC_TIMEOUT; // 属性_gRPC_超时
     public static Boolean PROPERTY_ACL_ENABLE;
     public static String PROPERTY_ACL_USERNAME;
     public static String PROPERTY_ACL_PASSWORD;
@@ -90,10 +90,10 @@ public class MetaInfo {
     public static Boolean PROPERTY_LR_USE_PARALLEL;
     public static Boolean PROPERTY_AUTH_OPEN;
     public static String PROPERTY_PROXY_GRPC_INTER_NEGOTIATIONTYPE;
-    public static String PROPERTY_PROXY_GRPC_INTER_CA_FILE;
-    public static String PROPERTY_PROXY_GRPC_INTER_CLIENT_CERTCHAIN_FILE;
-    public static String PROPERTY_PROXY_GRPC_INTER_CLIENT_PRIVATEKEY_FILE;
-    public static String PROPERTY_PROXY_GRPC_INTER_SERVER_CERTCHAIN_FILE;
+    public static String PROPERTY_PROXY_GRPC_INTER_CA_FILE;// 属性_代理_GRPC_内部_CA_文件
+    public static String PROPERTY_PROXY_GRPC_INTER_CLIENT_CERTCHAIN_FILE; // 属性_代理_GRPC_内部_客户端_证书链_文件
+    public static String PROPERTY_PROXY_GRPC_INTER_CLIENT_PRIVATEKEY_FILE;// 属性_代理_GRPC_内部_客户端_私钥_文件
+    public static String PROPERTY_PROXY_GRPC_INTER_SERVER_CERTCHAIN_FILE;// 属性_代理_GRPC_内部_服务器_证书链_文件
     public static String PROPERTY_PROXY_GRPC_INTER_SERVER_PRIVATEKEY_FILE;
 
     public static Map toMap() {
