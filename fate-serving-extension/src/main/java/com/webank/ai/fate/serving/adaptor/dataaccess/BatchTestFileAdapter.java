@@ -31,6 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 用于批量预测，读取本地文件，原理同 MockBatchAdaptor
+ */
 public class BatchTestFileAdapter extends AbstractBatchFeatureDataAdaptor {
     private static final Logger logger = LoggerFactory.getLogger(BatchTestFileAdapter.class);
 
@@ -46,6 +49,7 @@ public class BatchTestFileAdapter extends AbstractBatchFeatureDataAdaptor {
 
         try {
             Map<String, Object> data = new HashMap<>();
+            // 读取文件每一行
             List<String> lines = Files.readAllLines(Paths.get(System.getProperty(Dict.PROPERTY_USER_DIR), "host_data.csv"));
             lines.forEach(line -> {
                 for (String kv : StringUtils.split(line, ",")) {

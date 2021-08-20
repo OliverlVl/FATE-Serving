@@ -27,6 +27,11 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 固定返回mock特征数据:
+ * 什么是mock数据？
+ * mock数据其实就是模拟真实接口，虚拟业务场景，有助于前后台同时开发的虚拟、虚假数据。
+ */
 public class MockAdapter extends AbstractSingleFeatureDataAdaptor {
     private static final Logger logger = LoggerFactory.getLogger(MockAdapter.class);
 
@@ -39,6 +44,7 @@ public class MockAdapter extends AbstractSingleFeatureDataAdaptor {
     public ReturnResult getData(Context context, Map<String, Object> featureIds) {
         ReturnResult returnResult = new ReturnResult();
         Map<String, Object> data = new HashMap<>();
+
         try {
             String mockData = "x0:1,x1:5,x2:13,x3:58,x4:95,x5:352,x6:418,x7:833,x8:888,x9:937,x10:32776";
             for (String kv : StringUtils.split(mockData, ",")) {

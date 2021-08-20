@@ -105,7 +105,7 @@ public class Dict {
     public static final String PROPERTY_SERVING_ADDRESS = "serving";
     public static final String PROPERTY_USE_ZOOKEEPER = "useZookeeper";
     public static final String PROPERTY_PORT = "port";
-    public static final String PROPERTY_USER_DIR = "user.dir";
+    public static final String PROPERTY_USER_DIR = "user.dir"; //用户目录
     public static final String PROPERTY_USER_HOME = "user.home";
     public static final String PROPERTY_FILE_SEPARATOR = "file.separator";
     public static final String PROPERTY_ZK_URL = "zk.url";

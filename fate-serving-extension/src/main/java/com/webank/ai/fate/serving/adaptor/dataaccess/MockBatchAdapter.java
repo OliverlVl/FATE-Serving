@@ -28,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 用于批量预测，原理同 MockAdapter
+ */
 public class MockBatchAdapter extends AbstractBatchFeatureDataAdaptor {
     private static final Logger logger = LoggerFactory.getLogger(MockBatchAdapter.class);
 

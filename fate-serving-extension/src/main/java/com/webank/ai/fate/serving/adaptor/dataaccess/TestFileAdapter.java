@@ -30,6 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 从host_data.csv中读取特征数据，host_data.csv需上传至Host方serving-server实例部署根目录下，
+ */
 public class TestFileAdapter extends AbstractSingleFeatureDataAdaptor {
     private static final Logger logger = LoggerFactory.getLogger(TestFileAdapter.class);
 
@@ -43,6 +46,7 @@ public class TestFileAdapter extends AbstractSingleFeatureDataAdaptor {
         ReturnResult returnResult = new ReturnResult();
         Map<String, Object> data = new HashMap<>();
         try {
+            // 从host_data.csv中读取特征数据
             List<String> lines = Files.readAllLines(Paths.get(System.getProperty(Dict.PROPERTY_USER_DIR), "host_data.csv"));
             lines.forEach(line -> {
                 for (String kv : StringUtils.split(line, ",")) {
